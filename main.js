@@ -19,6 +19,7 @@ import { loadCharacters } from "./src/characters/CharacterLoader.js";
 import { bindAnimations } from "./src/animations/AnimationBinder.js";
 import { handleResize } from "./src/core/ResizeHandler.js";
 import { updateGameLoop } from "./src/core/GameLoop.js";
+import { setupMenu } from "./src/ui/MenuController.js";
 import {
   switchAction,
   playReadyIdle,
@@ -81,6 +82,8 @@ let audioManager;
 let playerIndex = 0;
 let enemyIndex = 0;
 
+let menuController;
+
 const idealLookAt = new THREE.Vector3();
 const idealPos = new THREE.Vector3();
 const currentLookAt = new THREE.Vector3(0, 90, 0);
@@ -93,15 +96,39 @@ const assets = ["mixamo"];
 init();
 
 function init() {
-  const fightBtn = document.getElementById("fightBtn");
+  menuController = setupMenu({
+    onFightStart: () => {
+      gameStarted = true;
+      audioManager.playBell();
+      audioManager.playFightMusic();
+    },
 
-  fightBtn.disabled = true;
-  fightBtn.textContent = "Cargando...";
+    onPlayerPrev: () => {
+      playerIndex--;
+      console.log("Player index:", playerIndex);
+    },
+
+    onPlayerNext: () => {
+      playerIndex++;
+      console.log("Player index:", playerIndex);
+    },
+
+    onEnemyPrev: () => {
+      enemyIndex--;
+      console.log("Enemy index:", enemyIndex);
+    },
+
+    onEnemyNext: () => {
+      enemyIndex++;
+      console.log("Enemy index:", enemyIndex);
+    }
+  });
+
+  menuController.setLoading();
 
   manager.onLoad = () => {
     console.log("Todo cargado");
-    fightBtn.disabled = false;
-    fightBtn.textContent = "Luchar";
+    menuController.setReady();
   };
 
   const container = document.createElement("div");
@@ -177,35 +204,6 @@ function init() {
 
   loadAsset(params.asset);
 
-  const overlay = document.getElementById("menuOverlay");
-
-  document.getElementById("playerPrev").onclick = () => {
-    playerIndex--;
-    console.log("Player index:", playerIndex);
-  };
-
-  document.getElementById("playerNext").onclick = () => {
-    playerIndex++;
-    console.log("Player index:", playerIndex);
-  };
-
-  document.getElementById("enemyPrev").onclick = () => {
-    enemyIndex--;
-    console.log("Enemy index:", enemyIndex);
-  };
-
-  document.getElementById("enemyNext").onclick = () => {
-    enemyIndex++;
-    console.log("Enemy index:", enemyIndex);
-  };
-
-  fightBtn.addEventListener("click", () => {
-    overlay.style.display = "none";
-    gameStarted = true;
-
-    audioManager.playBell();
-    audioManager.playFightMusic();
-  });
 }
 
 function loadAsset(asset) {
