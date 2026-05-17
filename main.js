@@ -1,13 +1,12 @@
 import * as THREE from "three";
 
-import Stats from "three/addons/libs/stats.module.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+//import Stats from "three/addons/libs/stats.module.js";
+//import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
 import { createCharacterData } from "./src/characters/CharacterData.js";
-// import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
 import { setupMorphTargets } from "./src/characters/MorphTargets.js";
 import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
@@ -20,6 +19,7 @@ import { bindAnimations } from "./src/animations/AnimationBinder.js";
 import { handleResize } from "./src/core/ResizeHandler.js";
 import { updateGameLoop } from "./src/core/GameLoop.js";
 import { setupMenu } from "./src/ui/MenuController.js";
+import { createSceneSetup } from "./src/core/SceneSetup.js";
 import {
   switchAction,
   playReadyIdle,
@@ -131,78 +131,45 @@ function init() {
     menuController.setReady();
   };
 
-  const container = document.createElement("div");
-  document.body.appendChild(container);
+const setup = createSceneSetup({ animate });
 
-  camera = new THREE.PerspectiveCamera(
-    45,
-    window.innerWidth / window.innerHeight,
-    1,
-    2000,
-  );
-  camera.position.set(0, 350, 500);
+camera = setup.camera;
+scene = setup.scene;
+renderer = setup.renderer;
+controls = setup.controls;
+stats = setup.stats;
 
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xa0a0a0);
+//=================================================
+// ILUMINACIÓN
+//=================================================
+setupLighting(scene);
 
-  //=================================================
-  // ILUMINACIÓN
-  //=================================================
-  setupLighting(scene);
+//=================================================
+// AUDIO
+//=================================================
+audioManager = setupAudio(camera);
 
-  //=================================================
-  // AUDIO
-  //=================================================
-  audioManager = setupAudio(camera);
+//=================================================
+// Ring / Escenario
+//=================================================
+createBoxingRing(scene, manager, ringConfig);
 
-  //=================================================
-  // Ring / Escenario
-  //=================================================
-  createBoxingRing(scene, manager, ringConfig);
+loader = new FBXLoader(manager);
 
-  loader = new FBXLoader(manager);
+window.addEventListener("resize", onWindowResize);
+window.addEventListener("keydown", onKeyDown);
+window.addEventListener("keyup", onKeyUp);
+window.addEventListener("wheel", onMouseWheel);
 
-  const canvas = document.getElementById("scene");
+const gui = new GUI();
 
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: true,
-  });
+gui.add(params, "asset", assets).onChange(function (value) {
+  loadAsset(value);
+});
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+guiMorphsFolder = gui.addFolder("Morphs").hide();
 
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
-
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setAnimationLoop(animate);
-  renderer.shadowMap.enabled = true;
-
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enablePan = false;
-  controls.minDistance = 150;
-  controls.maxDistance = 600;
-  controls.maxPolarAngle = Math.PI / 2 - 0.05;
-  controls.enabled = false;
-
-  window.addEventListener("resize", onWindowResize);
-  window.addEventListener("keydown", onKeyDown);
-  window.addEventListener("keyup", onKeyUp);
-  window.addEventListener("wheel", onMouseWheel);
-
-  stats = new Stats();
-  document.body.appendChild(stats.dom);
-
-  const gui = new GUI();
-
-  gui.add(params, "asset", assets).onChange(function (value) {
-    loadAsset(value);
-  });
-
-  guiMorphsFolder = gui.addFolder("Morphs").hide();
-
-  loadAsset(params.asset);
+loadAsset(params.asset);
 
 }
 
