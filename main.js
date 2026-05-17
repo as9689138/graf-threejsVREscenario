@@ -17,6 +17,7 @@ import { updateFacing } from "./src/combat/FacingSystem.js";
 import { loadAllAnimations } from "./src/animations/AnimationLoader.js";
 import { loadCharacters } from "./src/characters/CharacterLoader.js";
 import { bindAnimations } from "./src/animations/AnimationBinder.js";
+import { handleResize } from "./src/core/ResizeHandler.js";
 import {
   switchAction,
   playReadyIdle,
@@ -298,10 +299,10 @@ function onKeyUp(event) {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  handleResize({
+    camera,
+    renderer
+  });
 }
 
 function animate() {
