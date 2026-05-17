@@ -19,6 +19,7 @@ import { updateGameLoop } from "./src/core/GameLoop.js";
 import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
 import { setupGUI } from "./src/ui/GUIController.js";
+import { setupVR } from "./src/vr/VRManager.js";
 import {
   switchAction,
   playReadyIdle,
@@ -80,6 +81,8 @@ let playerIndex = 0;
 let enemyIndex = 0;
 
 let menuController;
+
+let vrManager;
 
 const idealLookAt = new THREE.Vector3();
 const idealPos = new THREE.Vector3();
@@ -168,6 +171,14 @@ function init() {
 
   loadAsset(params.asset);
 }
+
+//=================================================
+// VR
+//=================================================
+vrManager = setupVR({
+  renderer,
+  scene
+});
 
 function loadAsset(asset) {
   const loaded = loadCharacters({
