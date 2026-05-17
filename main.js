@@ -12,6 +12,7 @@ import { setupMorphTargets } from "./src/characters/MorphTargets.js";
 import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
 import { setupAudio } from "./src/audio/AudioManager.js";
+import { updateAI } from "./src/ai/AIController.js";
 import {
   //bindAnimations,
   switchAction,
@@ -480,46 +481,6 @@ function updateFacing() {
   enemy.model.rotation.y = angleEnemyToPlayer;
 }
 
-function updateAI() {
-  if (!enemy.model || !player.model) return;
-  if (!enemy.actions.fightIdle) return;
-  if (enemy.activeAction === enemy.actions.readyIdle) return;
-  if (enemy.activeAction === enemy.actions.standingToFight) return;
-  if (enemy.isMoving || enemy.isComboing || enemy.isHit || player.isHit) return;
-
-  const distance = player.model.position.distanceTo(enemy.model.position);
-  const idealDistance = 150;
-
-  const now = performance.now();
-
-  if (distance > idealDistance + 35) {
-    playBoxAction(
-      enemy,
-      "mediumForward",
-      startStepMovement
-    );
-  } else if (distance < idealDistance - 35) {
-    playBoxAction(
-      enemy,
-      "shortBackward",
-      startStepMovement
-    );
-  } else {
-    if (now > enemy.nextAttackTime) {
-      startEnemyCombo(
-        enemy,
-        enemyPunches,
-        playNextComboAction,
-        playFightIdle
-      );
-
-      enemy.nextAttackTime = now + 1600 + Math.random() * 1400;
-    } else {
-      playFightIdle(enemy);
-    }
-  }
-}
-
 function updateCamera() {
   if (!player.model || !enemy.model) return;
 
@@ -747,7 +708,16 @@ function animate() {
     triggerHitReaction
   });
 
-  updateAI();
+  updateAI({
+    player,
+    enemy,
+    playBoxAction,
+    startStepMovement,
+    startEnemyCombo,
+    enemyPunches,
+    playNextComboAction,
+    playFightIdle
+  });
 
   updateCamera();
 
