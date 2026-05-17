@@ -13,6 +13,17 @@ import { setupMorphTargets } from "./src/characters/MorphTargets.js";
 import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
 import { setupAudio } from "./src/audio/AudioManager.js";
+import {
+  //bindAnimations,
+  switchAction,
+  playReadyIdle,
+  playIntroToFight,
+  playFightIdle,
+  playBoxAction,
+  playPunchAction,
+  startEnemyCombo,
+  playNextComboAction
+} from "./src/animations/AnimationController.js";
 
 import {
   stepDistances,
@@ -294,8 +305,8 @@ function loadAllAnimations() {
           bindAnimations(player);
           bindAnimations(enemy);
 
-          playReadyIdle(player);
-          playReadyIdle(enemy);
+          playReadyIdle(player, playIntroToFight);
+          playReadyIdle(enemy, playIntroToFight);
         }
       },
     );
@@ -332,7 +343,7 @@ function bindAnimations(character) {
     }
 
     if (character.isComboing) {
-      playNextComboAction(character);
+      playNextComboAction(character, playFightIdle);
       return;
     }
 
@@ -346,118 +357,6 @@ function bindAnimations(character) {
   });
 }
 
-function switchAction(character, nextAction, fadeDuration = 0.35) {
-  if (!nextAction) return;
-
-  const previousAction = character.activeAction;
-
-  if (previousAction === nextAction) {
-    nextAction.reset().play();
-  } else {
-    nextAction.reset().fadeIn(fadeDuration).play();
-
-    if (previousAction) {
-      previousAction.crossFadeTo(nextAction, fadeDuration, false);
-    }
-  }
-
-  character.activeAction = nextAction;
-}
-
-function playReadyIdle(character) {
-  const idle = character.actions.readyIdle;
-  if (!idle) return;
-
-  switchAction(character, idle, 0.4);
-
-  setTimeout(function () {
-    if (character.activeAction === idle) playIntroToFight(character);
-  }, 1200);
-}
-
-function playIntroToFight(character) {
-  const intro = character.actions.standingToFight;
-  if (!intro) return;
-
-  switchAction(character, intro, 0.55);
-}
-
-function playFightIdle(character) {
-  const idle = character.actions.fightIdle;
-  if (!idle || character.activeAction === idle) return;
-
-  switchAction(character, idle, 0.45);
-
-  character.isMoving = false;
-  character.moveData = null;
-}
-
-function playBoxAction(character, name) {
-  if (character.isMoving || character.isHit) return;
-  if (!character.actions[name]) return;
-
-  character.isMoving = true;
-
-  const action = character.actions[name];
-
-  switchAction(character, action, 0.2);
-  startStepMovement(character, name, action);
-}
-
-function playPunchAction(character, name) {
-  if (character.isMoving || character.isHit) return;
-  if (!character.actions[name]) return;
-
-  character.isMoving = true;
-  character.currentPunch = name;
-  character.hasHit = false;
-
-  const action = character.actions[name];
-
-  switchAction(character, action, 0.15);
-}
-
-function startEnemyCombo() {
-  if (enemy.isMoving || enemy.isComboing || enemy.isHit) return;
-
-  const comboLength = THREE.MathUtils.randInt(1, 4);
-
-  enemy.comboQueue = [];
-
-  for (let i = 0; i < comboLength; i++) {
-    const randomPunch =
-      enemyPunches[Math.floor(Math.random() * enemyPunches.length)];
-
-    enemy.comboQueue.push(randomPunch);
-  }
-
-  enemy.isComboing = true;
-
-  playNextComboAction(enemy);
-}
-
-function playNextComboAction(character) {
-  if (character.comboQueue.length === 0) {
-    character.isComboing = false;
-    character.isMoving = false;
-    playFightIdle(character);
-    return;
-  }
-
-  const actionName = character.comboQueue.shift();
-  const action = character.actions[actionName];
-
-  if (!action) {
-    playNextComboAction(character);
-    return;
-  }
-
-  character.isMoving = true;
-  character.currentPunch = actionName;
-  character.hasHit = false;
-
-  switchAction(character, action, 0.12);
-}
 
 function startStepMovement(character, name, action) {
   const distance = stepDistances[name];
@@ -641,12 +540,25 @@ function updateAI() {
   const now = performance.now();
 
   if (distance > idealDistance + 35) {
-    playBoxAction(enemy, "mediumForward");
+    playBoxAction(
+      enemy,
+      "mediumForward",
+      startStepMovement
+    );
   } else if (distance < idealDistance - 35) {
-    playBoxAction(enemy, "shortBackward");
+    playBoxAction(
+      enemy,
+      "shortBackward",
+      startStepMovement
+    );
   } else {
     if (now > enemy.nextAttackTime) {
-      startEnemyCombo();
+      startEnemyCombo(
+        enemy,
+        enemyPunches,
+        playNextComboAction,
+        playFightIdle
+      );
 
       enemy.nextAttackTime = now + 1600 + Math.random() * 1400;
     } else {
@@ -748,22 +660,38 @@ function onKeyDown(event) {
 
     case "ArrowUp":
       event.preventDefault();
-      playBoxAction(player, shift ? "mediumForward" : "shortForward");
+      playBoxAction(
+        player,
+        shift ? "mediumForward" : "shortForward",
+        startStepMovement
+      );
       break;
 
     case "ArrowDown":
       event.preventDefault();
-      playBoxAction(player, shift ? "mediumBackward" : "shortBackward");
+      playBoxAction(
+        player,
+        shift ? "mediumBackward" : "shortBackward",
+        startStepMovement
+      );
       break;
 
     case "ArrowLeft":
       event.preventDefault();
-      playBoxAction(player, shift ? "mediumLeft" : "shortLeft");
+      playBoxAction(
+        player,
+        shift ? "mediumLeft" : "shortLeft",
+        startStepMovement
+      );
       break;
 
     case "ArrowRight":
       event.preventDefault();
-      playBoxAction(player, shift ? "mediumRight" : "shortRight");
+      playBoxAction(
+        player,
+        shift ? "mediumRight" : "shortRight",
+        startStepMovement
+      );
       break;
   }
 }
@@ -780,13 +708,29 @@ function checkAndPlayMovement() {
   const medium = keysPressed.Shift;
 
   if (keysPressed.ArrowUp) {
-    playBoxAction(player, medium ? "mediumForward" : "shortForward");
+    playBoxAction(
+      player,
+      medium ? "mediumForward" : "shortForward",
+      startStepMovement
+    );
   } else if (keysPressed.ArrowDown) {
-    playBoxAction(player, medium ? "mediumBackward" : "shortBackward");
+    playBoxAction(
+      player,
+      medium ? "mediumBackward" : "shortBackward",
+      startStepMovement
+    );
   } else if (keysPressed.ArrowLeft) {
-    playBoxAction(player, medium ? "mediumLeft" : "shortLeft");
+    playBoxAction(
+      player,
+      medium ? "mediumLeft" : "shortLeft",
+      startStepMovement
+    );
   } else if (keysPressed.ArrowRight) {
-    playBoxAction(player, medium ? "mediumRight" : "shortRight");
+    playBoxAction(
+      player,
+      medium ? "mediumRight" : "shortRight",
+      startStepMovement
+    );
   } else {
     playFightIdle(player);
   }
