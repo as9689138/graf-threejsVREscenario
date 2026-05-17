@@ -30,7 +30,8 @@ import {
 
 import {
   resolveBodyCollisions,
-  checkHits
+  checkHits,
+  triggerHitReaction
 } from "./src/combat/CombatSystem.js";
 
 import {
@@ -265,23 +266,6 @@ function startCharacterStepMovement(character, name, action) {
 }
 
 
-function triggerHitReaction(character, type) {
-  character.isHit = true;
-  character.isMoving = false;
-  character.isComboing = false;
-  character.comboQueue = [];
-  character.currentPunch = null;
-  character.moveData = null;
-
-  const animName = type === "body" ? "hitBody" : "hitHead";
-  const action = character.actions[animName];
-
-  if (action) {
-    switchAction(character, action, 0.1);
-  }
-}
-
-
 function onMouseWheel(event) {
   camDistMode1 = handleCameraZoom({
     event,
@@ -345,7 +329,9 @@ function animate() {
     enemy,
     punchTypes,
     audioManager,
-    triggerHitReaction
+    triggerHitReaction: (character, type) => {
+      triggerHitReaction(character, type, switchAction);
+    }
   });
 
   updateAI({

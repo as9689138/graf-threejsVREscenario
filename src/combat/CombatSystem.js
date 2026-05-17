@@ -82,3 +82,20 @@ export function evaluateHit({
     }
   }
 }
+
+
+export function triggerHitReaction(character, type, switchAction) {
+  character.isHit = true;
+  character.isMoving = false;
+  character.isComboing = false;
+  character.comboQueue = [];
+  character.currentPunch = null;
+  character.moveData = null;
+
+  const animName = type === "body" ? "hitBody" : "hitHead";
+  const action = character.actions[animName];
+
+  if (action) {
+    switchAction(character, action, 0.1);
+  }
+}
