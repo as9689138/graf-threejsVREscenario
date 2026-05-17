@@ -20,6 +20,7 @@ import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
 import { setupGUI } from "./src/ui/GUIController.js";
 import { setupVR } from "./src/vr/VRManager.js";
+import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
 import {
   switchAction,
   playReadyIdle,
@@ -82,7 +83,9 @@ let enemyIndex = 0;
 
 let menuController;
 
+// VARIABLES DE REALIDAD VIRTUAL
 let vrManager;
+let vrPlayerRig;
 
 const idealLookAt = new THREE.Vector3();
 const idealPos = new THREE.Vector3();
@@ -177,6 +180,11 @@ function init() {
 //=================================================
 vrManager = setupVR({
   renderer,
+  scene
+});
+
+vrPlayerRig = createVRPlayerRig({
+  camera,
   scene
 });
 
