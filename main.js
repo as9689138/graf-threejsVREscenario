@@ -5,7 +5,6 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
-//import { Audio, AudioListener, AudioLoader } from "three";
 
 import { createCharacterData } from "./src/characters/CharacterData.js";
 import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
@@ -24,6 +23,11 @@ import {
   startEnemyCombo,
   playNextComboAction
 } from "./src/animations/AnimationController.js";
+
+import {
+  resolveBodyCollisions,
+  checkHits
+} from "./src/combat/CombatSystem.js";
 
 import {
   stepDistances,
@@ -446,57 +450,6 @@ function updateStepMovement(character, delta) {
   }
 }
 
-function resolveBodyCollisions() {
-  if (!player.model || !enemy.model) return;
-
-  const dist = player.model.position.distanceTo(enemy.model.position);
-  const minDist = 65;
-
-  if (dist < minDist) {
-    const overlap = minDist - dist;
-    const dir = new THREE.Vector3()
-      .subVectors(player.model.position, enemy.model.position)
-      .normalize();
-
-    player.model.position.addScaledVector(dir, overlap * 0.5);
-    enemy.model.position.addScaledVector(dir, -overlap * 0.5);
-  }
-}
-
-function checkHits() {
-  if (!gameStarted || !player.model || !enemy.model) return;
-
-  evaluateHit(player, enemy);
-  evaluateHit(enemy, player);
-}
-
-function evaluateHit(attacker, defender) {
-  if (
-    !attacker.currentPunch ||
-    attacker.hasHit ||
-    attacker.isHit ||
-    defender.isHit
-  )
-    return;
-
-  const action = attacker.actions[attacker.currentPunch];
-  if (!action) return;
-
-  const progress = action.time / action.getClip().duration;
-
-  if (progress > 0.3 && progress < 0.5) {
-    const dist = attacker.model.position.distanceTo(defender.model.position);
-    const hitRange = 140;
-
-    if (dist < hitRange) {
-      attacker.hasHit = true;
-
-      audioManager.playPunch();
-
-      triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
-    }
-  }
-}
 
 function triggerHitReaction(character, type) {
   character.isHit = true;
@@ -783,8 +736,16 @@ function animate() {
   updateStepMovement(player, delta);
   updateStepMovement(enemy, delta);
 
-  resolveBodyCollisions();
-  checkHits();
+  resolveBodyCollisions(player, enemy);
+
+  checkHits({
+    gameStarted,
+    player,
+    enemy,
+    punchTypes,
+    audioManager,
+    triggerHitReaction
+  });
 
   updateAI();
 
