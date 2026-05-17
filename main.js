@@ -7,7 +7,7 @@ import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
 import { createCharacterData } from "./src/characters/CharacterData.js";
-import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
+// import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
 import { setupMorphTargets } from "./src/characters/MorphTargets.js";
 import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
@@ -15,6 +15,7 @@ import { setupAudio } from "./src/audio/AudioManager.js";
 import { updateAI } from "./src/ai/AIController.js";
 import { updateFacing } from "./src/combat/FacingSystem.js";
 import { loadAllAnimations } from "./src/animations/AnimationLoader.js";
+import { loadCharacters } from "./src/characters/CharacterLoader.js";
 import {
   //bindAnimations,
   switchAction,
@@ -203,55 +204,39 @@ function init() {
 }
 
 function loadAsset(asset) {
-  if (player.model) scene.remove(player.model);
-  if (enemy.model) scene.remove(enemy.model);
+  const loaded = loadCharacters({
+    scene,
+    loader,
+    manager,
+    asset,
+    player,
+    enemy,
+    guiMorphsFolder,
+    setupMorphTargets,
 
-  player = createCharacterData();
-  enemy = createCharacterData();
-  allClips = {};
-  keysPressed = {};
-
-  guiMorphsFolder.children.forEach((child) => child.destroy());
-  guiMorphsFolder.hide();
-
-  loader.load(
-    "assets/models/fbx/character/" + asset + ".fbx",
-    function (groupPlayer) {
-      setupModelMaterials(groupPlayer, manager, false);
-
-      player.model = groupPlayer;
-      player.model.position.set(0, 40, 120);
-      player.mixer = new THREE.AnimationMixer(player.model);
-      scene.add(player.model);
-
-      loader.load(
-        "assets/models/fbx/character/" + asset + ".fbx",
-        function (groupEnemy) {
-          setupModelMaterials(groupEnemy, manager, true);
-
-          enemy.model = groupEnemy;
-          enemy.model.position.set(0, 40, -120);
-          enemy.mixer = new THREE.AnimationMixer(enemy.model);
-          scene.add(enemy.model);
-
-          setupMorphTargets(player.model, guiMorphsFolder);
-          loadAllAnimations({
-            manager,
-            allClips,
-            onComplete: () => {
-              bindAnimations(player);
-              bindAnimations(enemy);
-
-              playReadyIdle(player, playIntroToFight);
-              playReadyIdle(enemy, playIntroToFight);
-            }
-          });
-        },
-      );
+    resetState: () => {
+      allClips = {};
+      keysPressed = {};
     },
-  );
-}
 
+    loadAllAnimations: (loadedPlayer, loadedEnemy) => {
+      loadAllAnimations({
+        manager,
+        allClips,
+        onComplete: () => {
+          bindAnimations(loadedPlayer);
+          bindAnimations(loadedEnemy);
+
+          playReadyIdle(loadedPlayer, playIntroToFight);
+          playReadyIdle(loadedEnemy, playIntroToFight);
+        }
+      });
+    }
+  });
+
+  player = loaded.player;
+  enemy = loaded.enemy;
+}
 
 function bindAnimations(character) {
   for (const name in allClips) {
