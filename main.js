@@ -18,6 +18,7 @@ import { loadAllAnimations } from "./src/animations/AnimationLoader.js";
 import { loadCharacters } from "./src/characters/CharacterLoader.js";
 import { bindAnimations } from "./src/animations/AnimationBinder.js";
 import { handleResize } from "./src/core/ResizeHandler.js";
+import { updateGameLoop } from "./src/core/GameLoop.js";
 import {
   switchAction,
   playReadyIdle,
@@ -58,6 +59,8 @@ import {
   startStepMovement,
   updateStepMovement
 } from "./src/movement/MovementSystem.js";
+
+
 
 const manager = new THREE.LoadingManager();
 
@@ -306,50 +309,36 @@ function onWindowResize() {
 }
 
 function animate() {
-  const delta = clock.getDelta();
-
-  if (player.mixer) player.mixer.update(delta);
-  if (enemy.mixer) enemy.mixer.update(delta);
-
-  if (!gameStarted) {
-    renderer.render(scene, camera);
-    stats.update();
-    return;
-  }
-
-  updateFacing(player, enemy);
-
-  updateStepMovement(player, delta, ringConfig);
-  updateStepMovement(enemy, delta, ringConfig);
-
-  resolveBodyCollisions(player, enemy);
-
-  checkHits({
-    gameStarted,
+  updateGameLoop({
+    clock,
     player,
     enemy,
+    gameStarted,
+    renderer,
+    scene,
+    camera,
+    stats,
+
+    ringConfig,
     punchTypes,
     audioManager,
-    triggerHitReaction: (character, type) => {
-      triggerHitReaction(character, type, switchAction);
-    }
-  });
 
-  updateAI({
-    player,
-    enemy,
+    updateFacing,
+    updateStepMovement,
+    resolveBodyCollisions,
+    checkHits,
+    triggerHitReaction,
+    switchAction,
+    updateAI,
+    updateCamera,
+
     playBoxAction,
-    startStepMovement: startCharacterStepMovement,
+    startCharacterStepMovement,
     startEnemyCombo,
     enemyPunches,
     playNextComboAction,
-    playFightIdle
-  });
+    playFightIdle,
 
-  updateCamera({
-    player,
-    enemy,
-    camera,
     controls,
     cameraMode,
     camDistMode1,
@@ -358,7 +347,4 @@ function animate() {
     idealPos,
     currentLookAt
   });
-
-  renderer.render(scene, camera);
-  stats.update();
 }
