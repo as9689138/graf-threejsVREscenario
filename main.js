@@ -14,6 +14,7 @@ import { setupLighting } from "./src/world/Lighting.js";
 import { setupAudio } from "./src/audio/AudioManager.js";
 import { updateAI } from "./src/ai/AIController.js";
 import { updateFacing } from "./src/combat/FacingSystem.js";
+import { loadAllAnimations } from "./src/animations/AnimationLoader.js";
 import {
   //bindAnimations,
   switchAction,
@@ -234,105 +235,23 @@ function loadAsset(asset) {
           scene.add(enemy.model);
 
           setupMorphTargets(player.model, guiMorphsFolder);
-          loadAllAnimations();
+          loadAllAnimations({
+            manager,
+            allClips,
+            onComplete: () => {
+              bindAnimations(player);
+              bindAnimations(enemy);
+
+              playReadyIdle(player, playIntroToFight);
+              playReadyIdle(enemy, playIntroToFight);
+            }
+          });
         },
       );
     },
   );
 }
 
-function removeRootMotionXZ(clip) {
-  const newTracks = clip.tracks.map(function (track) {
-    if (
-      track.name.includes("Hips.position") ||
-      track.name.includes("mixamorigHips.position")
-    ) {
-      const newValues = track.values.slice();
-      const baseX = newValues[0];
-      const baseZ = newValues[2];
-
-      for (let i = 0; i < newValues.length; i += 3) {
-        newValues[i] = baseX;
-        newValues[i + 2] = baseZ;
-      }
-
-      return new THREE.VectorKeyframeTrack(track.name, track.times, newValues);
-    }
-
-    return track;
-  });
-
-  return new THREE.AnimationClip(
-    clip.name + "_NoRootMotionXZ",
-    clip.duration,
-    newTracks,
-  );
-}
-
-function loadAllAnimations() {
-  const animationLoader = new FBXLoader(manager);
-
-  const animations = {
-    readyIdle: "Ready Idle",
-    standingToFight: "Standing Idle To Fight Idle",
-    fightIdle: "Bouncing Fight Idle",
-
-    shortForward: "Short Step Forward",
-    shortBackward: "Short Step Backward",
-    shortLeft: "Short Left Side Step",
-    shortRight: "Short Right Side Step",
-
-    mediumForward: "Long Step Forward",
-    mediumBackward: "Long Step Backward",
-    mediumLeft: "Long Left Side Step",
-    mediumRight: "Long Right Side Step",
-
-    leadJab: "Lead Jab",
-    jabCross: "Jab Cross",
-    hook: "Hook",
-    bodyJabCross: "Body Jab Cross",
-
-    leadJabShift: "Lead Jab Shift",
-    uppercut: "Uppercut",
-    hookShift: "Hook Shift",
-    bodyJabCrossShift: "Body Jab Cross Shift",
-
-    hitBody: "Hit To Body",
-    hitHead: "Big Hit To Head",
-  };
-
-  let loadedCount = 0;
-  const totalAnimations = Object.keys(animations).length;
-
-  for (const name in animations) {
-    animationLoader.load(
-      "assets/models/fbx/animations/" + animations[name] + ".fbx",
-      function (animGroup) {
-        if (!animGroup.animations || animGroup.animations.length === 0) {
-          console.warn("El archivo no trae animación:", animations[name]);
-          return;
-        }
-
-        let clip = animGroup.animations[0];
-
-        if (name.includes("short") || name.includes("medium")) {
-          clip = removeRootMotionXZ(clip);
-        }
-
-        allClips[name] = clip;
-        loadedCount++;
-
-        if (loadedCount === totalAnimations) {
-          bindAnimations(player);
-          bindAnimations(enemy);
-
-          playReadyIdle(player, playIntroToFight);
-          playReadyIdle(enemy, playIntroToFight);
-        }
-      },
-    );
-  }
-}
 
 function bindAnimations(character) {
   for (const name in allClips) {
