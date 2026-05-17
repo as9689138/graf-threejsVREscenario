@@ -13,6 +13,7 @@ import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
 import { setupAudio } from "./src/audio/AudioManager.js";
 import { updateAI } from "./src/ai/AIController.js";
+import { updateFacing } from "./src/combat/FacingSystem.js";
 import {
   //bindAnimations,
   switchAction,
@@ -405,18 +406,6 @@ function triggerHitReaction(character, type) {
   }
 }
 
-function updateFacing() {
-  if (!player.model || !enemy.model) return;
-
-  const dx = enemy.model.position.x - player.model.position.x;
-  const dz = enemy.model.position.z - player.model.position.z;
-
-  const anglePlayerToEnemy = Math.atan2(dx, dz);
-  const angleEnemyToPlayer = Math.atan2(-dx, -dz);
-
-  player.model.rotation.y = anglePlayerToEnemy;
-  enemy.model.rotation.y = angleEnemyToPlayer;
-}
 
 function onMouseWheel(event) {
   camDistMode1 = handleCameraZoom({
@@ -468,7 +457,7 @@ function animate() {
     return;
   }
 
-  updateFacing();
+  updateFacing(player, enemy);
 
   updateStepMovement(player, delta, ringConfig);
   updateStepMovement(enemy, delta, ringConfig);
