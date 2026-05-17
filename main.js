@@ -5,14 +5,14 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
-import { Audio, AudioListener, AudioLoader } from "three";
-//import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+//import { Audio, AudioListener, AudioLoader } from "three";
 
 import { createCharacterData } from "./src/characters/CharacterData.js";
 import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
 import { setupMorphTargets } from "./src/characters/MorphTargets.js";
-import { createBoxingRing } from './src/world/BoxingRing.js';
+import { createBoxingRing } from "./src/world/BoxingRing.js";
 import { setupLighting } from "./src/world/Lighting.js";
+import { setupAudio } from "./src/audio/AudioManager.js";
 
 import {
   stepDistances,
@@ -36,7 +36,8 @@ let cameraMode = cameraConfig.mode;
 let camDistMode1 = cameraConfig.camDistMode1;
 
 let gameStarted = false;
-let punchSound;
+// let punchSound;
+let audioManager;
 
 let playerIndex = 0;
 let enemyIndex = 0;
@@ -83,40 +84,10 @@ function init() {
   //=================================================
   setupLighting(scene);
 
-  const listener = new AudioListener();
-  camera.add(listener);
-
-  const audioLoader = new AudioLoader();
-  const sound = new Audio(listener);
-
-  audioLoader.load("assets/audio/Burning_Heart.mpeg", function (buffer) {
-    sound.setBuffer(buffer);
-    sound.setLoop(true);
-    sound.setVolume(0.5);
-    sound.play();
-  });
-
-  const bellSound = new Audio(listener);
-
-  audioLoader.load("assets/audio/campana.mpeg", function (buffer) {
-    bellSound.setBuffer(buffer);
-    bellSound.setLoop(false);
-    bellSound.setVolume(0.9);
-  });
-
-  punchSound = new Audio(listener);
-
-  audioLoader.load("assets/audio/golpe.mpeg", function (buffer) {
-    punchSound.setBuffer(buffer);
-    punchSound.setLoop(false);
-    punchSound.setVolume(1.8);
-  });
-
-  window.addEventListener("click", () => {
-    if (!sound.isPlaying && sound.buffer) {
-      sound.play();
-    }
-  });
+  //=================================================
+  // AUDIO
+  //=================================================
+  audioManager = setupAudio(camera);
 
   //=================================================
   // Ring / Escenario
@@ -193,17 +164,8 @@ function init() {
     overlay.style.display = "none";
     gameStarted = true;
 
-    if (bellSound.buffer && !bellSound.isPlaying) {
-      bellSound.play();
-    }
-
-    audioLoader.load("assets/audio/Fanfare.mpeg", function (buffer) {
-      sound.stop();
-      sound.setBuffer(buffer);
-      sound.setLoop(true);
-      sound.setVolume(0.4);
-      sound.play();
-    });
+    audioManager.playBell();
+    audioManager.playFightMusic();
   });
 }
 
@@ -630,10 +592,7 @@ function evaluateHit(attacker, defender) {
     if (dist < hitRange) {
       attacker.hasHit = true;
 
-      if (punchSound && punchSound.buffer) {
-        if (punchSound.isPlaying) punchSound.stop();
-        punchSound.play();
-      }
+      audioManager.playPunch();
 
       triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
     }
