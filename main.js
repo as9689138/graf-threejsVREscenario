@@ -16,8 +16,8 @@ import { updateAI } from "./src/ai/AIController.js";
 import { updateFacing } from "./src/combat/FacingSystem.js";
 import { loadAllAnimations } from "./src/animations/AnimationLoader.js";
 import { loadCharacters } from "./src/characters/CharacterLoader.js";
+import { bindAnimations } from "./src/animations/AnimationBinder.js";
 import {
-  //bindAnimations,
   switchAction,
   playReadyIdle,
   playIntroToFight,
@@ -224,8 +224,29 @@ function loadAsset(asset) {
         manager,
         allClips,
         onComplete: () => {
-          bindAnimations(loadedPlayer);
-          bindAnimations(loadedEnemy);
+          bindAnimations({
+            character: loadedPlayer,
+            allClips,
+            isPlayer: true,
+            keysPressed,
+            playFightIdle,
+            playNextComboAction,
+            checkAndPlayMovement,
+            playBoxAction,
+            startStepMovement: startCharacterStepMovement
+          });
+
+          bindAnimations({
+            character: loadedEnemy,
+            allClips,
+            isPlayer: false,
+            keysPressed,
+            playFightIdle,
+            playNextComboAction,
+            checkAndPlayMovement,
+            playBoxAction,
+            startStepMovement: startCharacterStepMovement
+          });
 
           playReadyIdle(loadedPlayer, playIntroToFight);
           playReadyIdle(loadedEnemy, playIntroToFight);
@@ -236,56 +257,6 @@ function loadAsset(asset) {
 
   player = loaded.player;
   enemy = loaded.enemy;
-}
-
-function bindAnimations(character) {
-  for (const name in allClips) {
-    const action = character.mixer.clipAction(allClips[name]);
-
-    if (name === "readyIdle" || name === "fightIdle") {
-      action.setLoop(THREE.LoopRepeat);
-    } else {
-      action.setLoop(THREE.LoopOnce);
-      action.clampWhenFinished = true;
-    }
-
-    action.enabled = true;
-    character.actions[name] = action;
-  }
-
-  character.mixer.addEventListener("finished", function (event) {
-    if (event.action === character.actions.readyIdle) return;
-    if (event.action === character.actions.fightIdle) return;
-
-    character.currentPunch = null;
-    character.hasHit = false;
-    character.moveData = null;
-
-    if (character.isHit) {
-      character.isHit = false;
-      playFightIdle(character);
-      return;
-    }
-
-    if (character.isComboing) {
-      playNextComboAction(character, playFightIdle);
-      return;
-    }
-
-    character.isMoving = false;
-
-    if (character === player) {
-      checkAndPlayMovement({
-        player,
-        keysPressed,
-        playBoxAction,
-        playFightIdle,
-        startStepMovement: startCharacterStepMovement
-      });
-    } else {
-      playFightIdle(character);
-    }
-  });
 }
 
 
