@@ -12,6 +12,7 @@ import { createCharacterData } from "./src/characters/CharacterData.js";
 import { setupModelMaterials } from "./src/characters/CharacterMaterials.js";
 import { setupMorphTargets } from "./src/characters/MorphTargets.js";
 import { createBoxingRing } from './src/world/BoxingRing.js';
+import { setupLighting } from "./src/world/Lighting.js";
 
 import {
   stepDistances,
@@ -77,37 +78,10 @@ function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xa0a0a0);
 
-  // Luz temporal de diagnóstico
-  // scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-
-  const light = new THREE.SpotLight(0xffffff, 340);
-  light.position.set(0, 500, 0);
-  light.angle = Math.PI / 3;
-  light.penumbra = 0.35;
-  light.castShadow = true;
-  light.shadow.mapSize.width = 2048;
-  light.shadow.mapSize.height = 2048;
-  light.shadow.camera.near = 50;
-  light.shadow.camera.far = 1000;
-  light.shadow.bias = -0.0005;
-  light.target.position.set(0, 0, 0);
-
-  scene.add(light);
-  scene.add(light.target);
-
-  const frontLight = new THREE.DirectionalLight(0xffffff, 1.15);
-  frontLight.position.set(0, 220, 320);
-  frontLight.target.position.set(0, 70, 0);
-
-  scene.add(frontLight);
-  scene.add(frontLight.target);
-
-  const hdrLoader = new RGBELoader();
-  hdrLoader.load("assets/entorno/wrestling_gym_8k.hdr", function (texture) {
-    texture.mapping = THREE.EquirectangularReflectionMapping;
-    scene.background = texture;
-    scene.environment = texture;
-  });
+  //=================================================
+  // ILUMINACIÓN
+  //=================================================
+  setupLighting(scene);
 
   const listener = new AudioListener();
   camera.add(listener);
