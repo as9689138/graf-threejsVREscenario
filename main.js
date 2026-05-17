@@ -1,9 +1,7 @@
 import * as THREE from "three";
 
-//import Stats from "three/addons/libs/stats.module.js";
-//import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+//import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
 import { createCharacterData } from "./src/characters/CharacterData.js";
@@ -20,6 +18,7 @@ import { handleResize } from "./src/core/ResizeHandler.js";
 import { updateGameLoop } from "./src/core/GameLoop.js";
 import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
+import { setupGUI } from "./src/ui/GUIController.js";
 import {
   switchAction,
   playReadyIdle,
@@ -28,13 +27,13 @@ import {
   playBoxAction,
   playPunchAction,
   startEnemyCombo,
-  playNextComboAction
+  playNextComboAction,
 } from "./src/animations/AnimationController.js";
 
 import {
   resolveBodyCollisions,
   checkHits,
-  triggerHitReaction
+  triggerHitReaction,
 } from "./src/combat/CombatSystem.js";
 
 import {
@@ -47,21 +46,19 @@ import {
 
 import {
   updateCamera,
-  handleCameraZoom
+  handleCameraZoom,
 } from "./src/camera/CameraController.js";
 
 import {
   handleKeyDown,
   handleKeyUp,
-  checkAndPlayMovement
+  checkAndPlayMovement,
 } from "./src/input/InputController.js";
 
 import {
   startStepMovement,
-  updateStepMovement
+  updateStepMovement,
 } from "./src/movement/MovementSystem.js";
-
-
 
 const manager = new THREE.LoadingManager();
 
@@ -121,7 +118,7 @@ function init() {
     onEnemyNext: () => {
       enemyIndex++;
       console.log("Enemy index:", enemyIndex);
-    }
+    },
   });
 
   menuController.setLoading();
@@ -131,46 +128,45 @@ function init() {
     menuController.setReady();
   };
 
-const setup = createSceneSetup({ animate });
+  const setup = createSceneSetup({ animate });
 
-camera = setup.camera;
-scene = setup.scene;
-renderer = setup.renderer;
-controls = setup.controls;
-stats = setup.stats;
+  camera = setup.camera;
+  scene = setup.scene;
+  renderer = setup.renderer;
+  controls = setup.controls;
+  stats = setup.stats;
 
-//=================================================
-// ILUMINACIÓN
-//=================================================
-setupLighting(scene);
+  //=================================================
+  // ILUMINACIÓN
+  //=================================================
+  setupLighting(scene);
 
-//=================================================
-// AUDIO
-//=================================================
-audioManager = setupAudio(camera);
+  //=================================================
+  // AUDIO
+  //=================================================
+  audioManager = setupAudio(camera);
 
-//=================================================
-// Ring / Escenario
-//=================================================
-createBoxingRing(scene, manager, ringConfig);
+  //=================================================
+  // Ring / Escenario
+  //=================================================
+  createBoxingRing(scene, manager, ringConfig);
 
-loader = new FBXLoader(manager);
+  loader = new FBXLoader(manager);
 
-window.addEventListener("resize", onWindowResize);
-window.addEventListener("keydown", onKeyDown);
-window.addEventListener("keyup", onKeyUp);
-window.addEventListener("wheel", onMouseWheel);
+  window.addEventListener("resize", onWindowResize);
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+  window.addEventListener("wheel", onMouseWheel);
 
-const gui = new GUI();
+  const guiController = setupGUI({
+    params,
+    assets,
+    onAssetChange: loadAsset,
+  });
 
-gui.add(params, "asset", assets).onChange(function (value) {
-  loadAsset(value);
-});
+  guiMorphsFolder = guiController.guiMorphsFolder;
 
-guiMorphsFolder = gui.addFolder("Morphs").hide();
-
-loadAsset(params.asset);
-
+  loadAsset(params.asset);
 }
 
 function loadAsset(asset) {
@@ -203,7 +199,7 @@ function loadAsset(asset) {
             playNextComboAction,
             checkAndPlayMovement,
             playBoxAction,
-            startStepMovement: startCharacterStepMovement
+            startStepMovement: startCharacterStepMovement,
           });
 
           bindAnimations({
@@ -215,32 +211,30 @@ function loadAsset(asset) {
             playNextComboAction,
             checkAndPlayMovement,
             playBoxAction,
-            startStepMovement: startCharacterStepMovement
+            startStepMovement: startCharacterStepMovement,
           });
 
           playReadyIdle(loadedPlayer, playIntroToFight);
           playReadyIdle(loadedEnemy, playIntroToFight);
-        }
+        },
       });
-    }
+    },
   });
 
   player = loaded.player;
   enemy = loaded.enemy;
 }
 
-
 function startCharacterStepMovement(character, name, action) {
   startStepMovement(character, name, action, stepDistances);
 }
-
 
 function onMouseWheel(event) {
   camDistMode1 = handleCameraZoom({
     event,
     cameraMode,
     camDistMode1,
-    cameraConfig
+    cameraConfig,
   });
 }
 
@@ -255,21 +249,21 @@ function onKeyDown(event) {
     },
     playBoxAction,
     playPunchAction,
-    startStepMovement: startCharacterStepMovement
+    startStepMovement: startCharacterStepMovement,
   });
 }
 
 function onKeyUp(event) {
   handleKeyUp({
     event,
-    keysPressed
+    keysPressed,
   });
 }
 
 function onWindowResize() {
   handleResize({
     camera,
-    renderer
+    renderer,
   });
 }
 
@@ -310,6 +304,6 @@ function animate() {
     cameraConfig,
     idealLookAt,
     idealPos,
-    currentLookAt
+    currentLookAt,
   });
 }
