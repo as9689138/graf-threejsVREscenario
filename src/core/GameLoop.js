@@ -13,6 +13,8 @@ export function updateGameLoop({
   playerHeadBone,
   syncVRRigToPlayerHead,
 
+  vrButtonMapper,
+
   ringConfig,
   punchTypes,
   audioManager,
@@ -45,6 +47,10 @@ export function updateGameLoop({
 
   if (player.mixer) player.mixer.update(delta);
   if (enemy.mixer) enemy.mixer.update(delta);
+
+  if (renderer.xr.isPresenting && vrButtonMapper) {
+    vrButtonMapper.update();
+  }
 
   // Mantener orientación incluso antes de iniciar pelea
   updateFacing(player, enemy);

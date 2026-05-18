@@ -48,5 +48,5 @@ export function syncVRRigToPlayerHead({
   vrPlayerRig.rig.position.add(correction);
 
   // Igualar orientación horizontal del rig al jugador
-  vrPlayerRig.rig.rotation.y = player.model.rotation.y;
+  vrPlayerRig.rig.rotation.y = player.model.rotation.y + Math.PI;
 }

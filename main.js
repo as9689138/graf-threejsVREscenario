@@ -22,6 +22,8 @@ import { setupGUI } from "./src/ui/GUIController.js";
 // VR
 import { setupVR } from "./src/vr/VRManager.js";
 import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
+import { setupVRInput } from "./src/vr/VRInputController.js";
+import { createVRButtonMapper } from "./src/vr/VRButtonMapper.js";
 import {
   switchAction,
   playReadyIdle,
@@ -92,8 +94,17 @@ let menuController;
 
 // VARIABLES DE REALIDAD VIRTUAL
 let vrManager;
+
 let vrPlayerRig;
 let playerHeadBone = null;
+
+let vrButtonMapper;
+
+vrButtonMapper = createVRButtonMapper({
+  renderer,
+  player,
+  playPunchAction
+});
 
 const idealLookAt = new THREE.Vector3();
 const idealPos = new THREE.Vector3();
@@ -207,6 +218,19 @@ renderer.xr.addEventListener("sessionstart", () => {
 renderer.xr.addEventListener("sessionend", () => {
   vrPlayerRig.exitVRPose();
 });
+
+setupVRInput({
+  controllerLeft: vrManager.controllerLeft,
+  controllerRight: vrManager.controllerRight
+});
+
+vrButtonMapper = createVRButtonMapper({
+  getRenderer: () => renderer,
+  getPlayer: () => player,
+  playPunchAction
+});
+
+// =======================================================
 
 function loadAsset(asset) {
   const loaded = loadCharacters({
@@ -322,6 +346,8 @@ function animate() {
     vrPlayerRig,
     playerHeadBone,
     syncVRRigToPlayerHead,
+
+    vrButtonMapper,
 
     ringConfig,
     punchTypes,
