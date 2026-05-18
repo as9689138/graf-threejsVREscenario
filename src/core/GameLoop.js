@@ -8,6 +8,11 @@ export function updateGameLoop({
   camera,
   stats,
 
+  // VR
+  vrPlayerRig,
+  playerHeadBone,
+  syncVRRigToPlayerHead,
+
   ringConfig,
   punchTypes,
   audioManager,
@@ -34,20 +39,43 @@ export function updateGameLoop({
   cameraConfig,
   idealLookAt,
   idealPos,
-  currentLookAt
+  currentLookAt,
 }) {
   const delta = clock.getDelta();
 
   if (player.mixer) player.mixer.update(delta);
   if (enemy.mixer) enemy.mixer.update(delta);
 
+  // Mantener orientación incluso antes de iniciar pelea
+  updateFacing(player, enemy);
+
+  if (renderer.xr.isPresenting) {
+    syncVRRigToPlayerHead({
+      vrPlayerRig,
+      headBone: playerHeadBone,
+      player,
+      camera,
+    });
+  } else {
+    updateCamera({
+      player,
+      enemy,
+      camera,
+      controls,
+      cameraMode,
+      camDistMode1,
+      cameraConfig,
+      idealLookAt,
+      idealPos,
+      currentLookAt,
+    });
+  }
+
   if (!gameStarted) {
     renderer.render(scene, camera);
     stats.update();
     return;
   }
-
-  updateFacing(player, enemy);
 
   updateStepMovement(player, delta, ringConfig);
   updateStepMovement(enemy, delta, ringConfig);
@@ -62,7 +90,7 @@ export function updateGameLoop({
     audioManager,
     triggerHitReaction: (character, type) => {
       triggerHitReaction(character, type, switchAction);
-    }
+    },
   });
 
   updateAI({
@@ -73,20 +101,7 @@ export function updateGameLoop({
     startEnemyCombo,
     enemyPunches,
     playNextComboAction,
-    playFightIdle
-  });
-
-  updateCamera({
-    player,
-    enemy,
-    camera,
-    controls,
-    cameraMode,
-    camDistMode1,
-    cameraConfig,
-    idealLookAt,
-    idealPos,
-    currentLookAt
+    playFightIdle,
   });
 
   renderer.render(scene, camera);

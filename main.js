@@ -19,6 +19,7 @@ import { updateGameLoop } from "./src/core/GameLoop.js";
 import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
 import { setupGUI } from "./src/ui/GUIController.js";
+// VR
 import { setupVR } from "./src/vr/VRManager.js";
 import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
 import {
@@ -62,6 +63,12 @@ import {
   updateStepMovement,
 } from "./src/movement/MovementSystem.js";
 
+// VR
+import {
+  findHeadBone,
+  syncVRRigToPlayerHead
+} from "./src/vr/VRHeadSync.js";
+
 const manager = new THREE.LoadingManager();
 
 let camera, scene, renderer, stats, loader, guiMorphsFolder, controls;
@@ -86,6 +93,7 @@ let menuController;
 // VARIABLES DE REALIDAD VIRTUAL
 let vrManager;
 let vrPlayerRig;
+let playerHeadBone = null;
 
 const idealLookAt = new THREE.Vector3();
 const idealPos = new THREE.Vector3();
@@ -132,6 +140,7 @@ function init() {
   manager.onLoad = () => {
     console.log("Todo cargado");
     menuController.setReady();
+    vrManager.setVRReady();
   };
 
   const setup = createSceneSetup({ animate });
@@ -183,9 +192,20 @@ vrManager = setupVR({
   scene
 });
 
+vrManager.setVRLoading();
+
 vrPlayerRig = createVRPlayerRig({
   camera,
   scene
+});
+
+// PROTECCIÓN DE CÁMARA DE VISTA 3D FRENTE A VR
+renderer.xr.addEventListener("sessionstart", () => {
+  vrPlayerRig.enterVRPose();
+});
+
+renderer.xr.addEventListener("sessionend", () => {
+  vrPlayerRig.exitVRPose();
 });
 
 function loadAsset(asset) {
@@ -209,6 +229,8 @@ function loadAsset(asset) {
         manager,
         allClips,
         onComplete: () => {
+          playerHeadBone = findHeadBone(loadedPlayer.model);
+
           bindAnimations({
             character: loadedPlayer,
             allClips,
@@ -296,6 +318,10 @@ function animate() {
     scene,
     camera,
     stats,
+
+    vrPlayerRig,
+    playerHeadBone,
+    syncVRRigToPlayerHead,
 
     ringConfig,
     punchTypes,

@@ -8,6 +8,8 @@ export function setupVR({ renderer, scene }) {
   vrButton.classList.add("vr-button");
   document.body.appendChild(vrButton);
 
+  vrButton.style.display = "none";
+
   const controllerLeft = renderer.xr.getController(0);
   const controllerRight = renderer.xr.getController(1);
 
@@ -24,11 +26,21 @@ export function setupVR({ renderer, scene }) {
   gripRight.add(controllerModelFactory.createControllerModel(gripRight));
   scene.add(gripRight);
 
+  function setVRReady() {
+    vrButton.style.display = "block";
+  }
+
+  function setVRLoading() {
+    vrButton.style.display = "none";
+  }
+
   return {
     vrButton,
     controllerLeft,
     controllerRight,
     gripLeft,
-    gripRight
+    gripRight,
+    setVRReady,
+    setVRLoading
   };
 }
