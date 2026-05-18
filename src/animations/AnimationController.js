@@ -45,6 +45,8 @@ export function playFightIdle(character) {
 
   if (!idle || character.activeAction === idle) return;
 
+  character.currentVRMove = null;
+
   switchAction(character, idle, 0.45);
 
   character.isMoving = false;
@@ -128,4 +130,27 @@ export function startEnemyCombo(
   enemy.isComboing = true;
 
   playNextComboAction(enemy, playFightIdle);
+}
+
+//VR
+export function playVRMovementAnimation(character, name) {
+  if (!character || !character.actions) return;
+  if (character.isHit || character.currentPunch) return;
+  if (!character.actions[name]) return;
+
+  const action = character.actions[name];
+
+  // Evita reiniciar la misma animación, pero permite cambiar short ↔ medium
+  if (
+    character.activeAction === action &&
+    character.currentVRMove === name
+  ) {
+    return;
+  }
+
+  character.currentVRMove = name;
+  character.isMoving = false;
+  character.moveData = null;
+
+  switchAction(character, action, 0.12);
 }

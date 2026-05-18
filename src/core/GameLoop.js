@@ -15,6 +15,10 @@ export function updateGameLoop({
 
   vrButtonMapper,
 
+  updateVRLocomotion,
+
+  playVRMovementAnimation,
+
   ringConfig,
   punchTypes,
   audioManager,
@@ -50,6 +54,17 @@ export function updateGameLoop({
 
   if (renderer.xr.isPresenting && vrButtonMapper) {
     vrButtonMapper.update();
+  }
+
+  if (renderer.xr.isPresenting && updateVRLocomotion) {
+    updateVRLocomotion({
+      renderer,
+      player,
+      delta,
+      ringConfig,
+      playVRMovementAnimation,
+      playFightIdle
+    });
   }
 
   // Mantener orientación incluso antes de iniciar pelea

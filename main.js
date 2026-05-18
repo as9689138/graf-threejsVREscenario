@@ -24,6 +24,7 @@ import { setupVR } from "./src/vr/VRManager.js";
 import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
 import { setupVRInput } from "./src/vr/VRInputController.js";
 import { createVRButtonMapper } from "./src/vr/VRButtonMapper.js";
+import { updateVRLocomotion } from "./src/vr/VRLocomotion.js";
 import {
   switchAction,
   playReadyIdle,
@@ -33,6 +34,8 @@ import {
   playPunchAction,
   startEnemyCombo,
   playNextComboAction,
+  //VR
+  playVRMovementAnimation,
 } from "./src/animations/AnimationController.js";
 
 import {
@@ -348,6 +351,8 @@ function animate() {
     syncVRRigToPlayerHead,
 
     vrButtonMapper,
+
+    updateVRLocomotion,
 
     ringConfig,
     punchTypes,
