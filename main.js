@@ -151,10 +151,18 @@ function init() {
 
   menuController.setLoading();
 
+  if (vrManager) {
+    vrManager.setVRLoading();
+  }
+
   manager.onLoad = () => {
     console.log("Todo cargado");
+
     menuController.setReady();
-    vrManager.setVRReady();
+
+    if (vrManager) {
+      vrManager.setVRReady();
+    }
   };
 
   const setup = createSceneSetup({ animate });
