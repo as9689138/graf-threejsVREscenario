@@ -14,6 +14,15 @@ export function createCharacterData() {
         // Variables de Colisiones e Impactos
         isHit: false,
         currentPunch: null,
-        hasHit: false
+        hasHit: false,
+        
+        // --- NUEVAS VARIABLES: MEMORIA PARA EVASIÓN ---
+        consecutiveHitsReceived: 0,
+        lastHitTime: 0,
+        evadeTimer: 0,
+        needsToEvade: false,
+
+        // --- NUEVA VARIABLE: I-FRAMES ---
+        isEvading: false
     };
 }

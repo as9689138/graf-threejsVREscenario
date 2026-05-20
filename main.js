@@ -219,10 +219,31 @@ vrPlayerRig = createVRPlayerRig({
 // PROTECCIÓN DE CÁMARA DE VISTA 3D FRENTE A VR
 renderer.xr.addEventListener("sessionstart", () => {
   vrPlayerRig.enterVRPose();
+  
+  // ¡NUEVO!: Iniciar el combate automáticamente al entrar en VR
+  if (!gameStarted) {
+    gameStarted = true;
+    
+    // Reproducir los audios de inicio (el visor ya nos da permiso porque hicimos clic en Enter VR)
+    if (audioManager) {
+      audioManager.playBell();
+      audioManager.playFightMusic();
+    }
+    
+    // Ocultar el menú HTML de la pantalla de la PC por si acaso
+    if (menuController && menuController.overlay) {
+      menuController.overlay.style.display = "none";
+    }
+  }
 });
 
 renderer.xr.addEventListener("sessionend", () => {
   vrPlayerRig.exitVRPose();
+  
+  // Opcional: Volver a mostrar el menú al salir de VR
+  if (menuController && menuController.overlay) {
+    menuController.overlay.style.display = "flex";
+  }
 });
 
 setupVRInput({
