@@ -38,8 +38,8 @@ export function syncVRRigToPlayerHead({
 
   desiredEyePosition
     .copy(headWorldPosition)
-    .addScaledVector(forwardOffset, 10) // adelante de la cabeza
-    .add(new THREE.Vector3(0, -22, 0)); // bajar hacia los ojos
+    .addScaledVector(forwardOffset, 2) // adelante de la cabeza
+    .add(new THREE.Vector3(0, -30, 0)); // bajar hacia los ojos
 
   // Diferencia entre donde está la cámara y donde queremos que esté
   correction.subVectors(desiredEyePosition, cameraWorldPosition);
