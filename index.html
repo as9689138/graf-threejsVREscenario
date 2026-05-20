@@ -22,6 +22,25 @@
 
     <canvas id="scene"></canvas>
 
+    <!-- HUD DE PELEA -->
+    <div id="gameHUD" style="display: none;">
+        <div class="hud-player">
+            <div class="hud-name">JUGADOR</div>
+            <div class="health-bar-bg"><div id="hp-player" class="health-bar-fill"></div></div>
+        </div>
+        <div class="hud-center">
+            <div id="hud-round">ROUND 1</div>
+            <div id="hud-timer">2:00</div>
+        </div>
+        <div class="hud-enemy">
+            <div class="hud-name">IA OPONENTE</div>
+            <div class="health-bar-bg"><div id="hp-enemy" class="health-bar-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- ANUNCIADOR CINEMÁTICO -->
+    <div id="announcer" style="display: none;">ROUND 1</div>
+
     <div id="menuOverlay">
         <header class="menuHeader">
             <img src="assets/textures/logo_itp.png" alt="Logo ITP" class="mainLogo">

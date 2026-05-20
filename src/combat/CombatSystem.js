@@ -26,22 +26,18 @@ export function checkHits({
   enemy,
   punchTypes,
   audioManager,
-  triggerHitReaction
+  triggerHitReaction,
+  isVR // Recibimos la variable
 }) {
   if (!gameStarted || !player.model || !enemy.model) return;
 
-  evaluateHit({ attacker: player, defender: enemy, punchTypes, audioManager, triggerHitReaction });
-  evaluateHit({ attacker: enemy, defender: player, punchTypes, audioManager, triggerHitReaction });
+  // Se la inyectamos a los evaluadores de golpe
+  evaluateHit({ attacker: player, defender: enemy, punchTypes, audioManager, triggerHitReaction, isVR });
+  evaluateHit({ attacker: enemy, defender: player, punchTypes, audioManager, triggerHitReaction, isVR });
 }
 
-export function evaluateHit({
-  attacker,
-  defender,
-  punchTypes,
-  audioManager,
-  triggerHitReaction
-}) {
-  // NUEVO: Verificamos defender.isEvading. Si está evadiendo, el golpe no le afecta.
+export function evaluateHit({ attacker, defender, punchTypes, audioManager, triggerHitReaction, isVR }) {
+  // 1. Verificamos que el atacante esté golpeando y que el defensor no esté evadiendo (I-Frames)
   if (!attacker.currentPunch || attacker.hasHit || attacker.isHit || defender.isHit || defender.isEvading) {
     return;
   }
@@ -50,28 +46,40 @@ export function evaluateHit({
   if (!action) return;
 
   const progress = action.time / action.getClip().duration;
+  
+  // Rango de tiempo de la animación donde el golpe es válido (en VR damos un poquito más de margen)
+  const maxProgress = isVR ? 0.6 : 0.5; 
 
-  if (progress > 0.3 && progress < 0.6) { 
+  if (progress > 0.3 && progress < maxProgress) {
     const dist = attacker.model.position.distanceTo(defender.model.position);
-    const hitRange = 125; 
+    
+    // Distancia física a la que el golpe conecta
+    const hitRange = isVR ? 125 : 140; 
 
     if (dist < hitRange) {
+      // ¡EL GOLPE CONECTÓ!
       attacker.hasHit = true;
-      audioManager.playPunch(); 
+      audioManager.playPunch();
 
-      // === NUEVO: PUSHBACK (Empuje por el impacto) ===
-      // Calculamos la dirección del golpe y empujamos al defensor 22 unidades hacia atrás
+      // === A. PUSHBACK (Empujar al rival hacia atrás) ===
       const pushDirection = new THREE.Vector3()
         .subVectors(defender.model.position, attacker.model.position)
         .normalize();
       pushDirection.y = 0; // Evitamos que salga volando hacia arriba
-      
       defender.model.position.addScaledVector(pushDirection, 22);
 
-      triggerHitReaction(
-        defender,
-        punchTypes[attacker.currentPunch] || "head"
-      );
+      // === B. RECIBIR DAÑO (Sistema de Vida) ===
+      // Restamos 10 puntos de vida al que recibió el golpe
+      defender.health -= 10;
+      
+      // Verificamos si la vida llegó a cero (K.O.)
+      if (defender.health <= 0) {
+          defender.health = 0;
+          defender.isDead = true;
+      }
+
+      // === C. REACCIÓN DE DOLOR (Animación) ===
+      triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
     }
   }
 }

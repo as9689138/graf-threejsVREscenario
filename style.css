@@ -204,3 +204,59 @@ button:hover {
   background: #fff;
   transform: translateX(-50%) scale(1.05);
 }
+
+/* =================================================
+   SISTEMA DE VIDA Y ROUNDS (HUD)
+================================================= */
+#gameHUD {
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    display: flex; justify-content: space-between;
+    padding: 20px 40px; box-sizing: border-box;
+    z-index: 50; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+}
+
+.hud-player, .hud-enemy { width: 35%; }
+.hud-enemy { text-align: right; }
+
+.hud-name { font-weight: bold; font-size: 20px; text-shadow: 2px 2px 2px #000; margin-bottom: 5px; }
+
+.health-bar-bg {
+    width: 100%; height: 25px;
+    background: #333; border: 2px solid #fff; border-radius: 4px;
+    overflow: hidden;
+}
+
+.health-bar-fill {
+    height: 100%; width: 100%;
+    background: #00ff00; /* Verde inicial */
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+/* El jugador es azul, el enemigo es rojo (opcional, pero ayuda) */
+#hp-player { transform-origin: left; }
+#hp-enemy { float: right; }
+
+.hud-center { text-align: center; width: 20%; }
+#hud-round { font-size: 22px; font-weight: bold; color: #ffd700; text-shadow: 2px 2px 4px #000; }
+#hud-timer { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px #000; font-family: monospace; }
+
+/* =================================================
+   ANUNCIADOR CENTRAL (K.O, ROUNDS)
+================================================= */
+#announcer {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 80px; font-weight: bold;
+    color: #fff; text-shadow: 0px 0px 20px #ff0000, 4px 4px 0px #000;
+    z-index: 60; pointer-events: none;
+    text-align: center;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}

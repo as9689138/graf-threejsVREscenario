@@ -1,51 +1,11 @@
 export function updateGameLoop({
-  clock,
-  player,
-  enemy,
-  gameStarted,
-  renderer,
-  scene,
-  camera,
-  stats,
-
-  // VR
-  vrPlayerRig,
-  playerHeadBone,
-  syncVRRigToPlayerHead,
-
-  vrButtonMapper,
-
-  updateVRLocomotion,
-
-  playVRMovementAnimation,
-
-  ringConfig,
-  punchTypes,
-  audioManager,
-
-  updateFacing,
-  updateStepMovement,
-  resolveBodyCollisions,
-  checkHits,
-  triggerHitReaction,
-  switchAction,
-  updateAI,
-  updateCamera,
-
-  playBoxAction,
-  startCharacterStepMovement,
-  startEnemyCombo,
-  enemyPunches,
-  playNextComboAction,
-  playFightIdle,
-
-  controls,
-  cameraMode,
-  camDistMode1,
-  cameraConfig,
-  idealLookAt,
-  idealPos,
-  currentLookAt,
+  clock, player, enemy, gameStarted, renderer, scene, camera, stats,
+  vrPlayerRig, playerHeadBone, syncVRRigToPlayerHead, vrButtonMapper, updateVRLocomotion,
+  playVRMovementAnimation, ringConfig, punchTypes, audioManager, updateFacing, updateStepMovement,
+  resolveBodyCollisions, checkHits, triggerHitReaction, switchAction, updateAI, updateCamera,
+  playBoxAction, startCharacterStepMovement, startEnemyCombo, enemyPunches, playNextComboAction, playFightIdle,
+  controls, cameraMode, camDistMode1, cameraConfig, idealLookAt, idealPos, currentLookAt,
+  gameState // <--- Recibe el estado desde main.js
 }) {
   const delta = clock.getDelta();
 
@@ -58,12 +18,7 @@ export function updateGameLoop({
 
   if (renderer.xr.isPresenting && updateVRLocomotion) {
     updateVRLocomotion({
-      renderer,
-      player,
-      delta,
-      ringConfig,
-      playVRMovementAnimation,
-      playFightIdle
+      renderer, player, delta, ringConfig, playVRMovementAnimation, playFightIdle
     });
   }
 
@@ -71,58 +26,36 @@ export function updateGameLoop({
   updateFacing(player, enemy);
 
   if (renderer.xr.isPresenting) {
-    syncVRRigToPlayerHead({
-      vrPlayerRig,
-      headBone: playerHeadBone,
-      player,
-      camera,
-    });
+    syncVRRigToPlayerHead({ vrPlayerRig, headBone: playerHeadBone, player, camera });
   } else {
-    updateCamera({
-      player,
-      enemy,
-      camera,
-      controls,
-      cameraMode,
-      camDistMode1,
-      cameraConfig,
-      idealLookAt,
-      idealPos,
-      currentLookAt,
-    });
+    updateCamera({ player, enemy, camera, controls, cameraMode, camDistMode1, cameraConfig, idealLookAt, idealPos, currentLookAt });
   }
 
-  if (!gameStarted) {
-    renderer.render(scene, camera);
-    stats.update();
-    return;
+  // Si no están peleando (Menú, Anuncio de Round o K.O.), solo dibujamos y congelamos la IA
+  if (gameState !== 'FIGHTING') {
+      renderer.render(scene, camera);
+      stats.update();
+      return; 
   }
 
+  // ==============================
+  // ACCIONES DE COMBATE (FIGHTING)
+  // ==============================
   updateStepMovement(player, delta, ringConfig);
   updateStepMovement(enemy, delta, ringConfig);
 
   resolveBodyCollisions(player, enemy);
 
+  const isVR = renderer.xr.isPresenting; // Detectamos si estamos en el visor
+
   checkHits({
-    gameStarted,
-    player,
-    enemy,
-    punchTypes,
-    audioManager,
-    triggerHitReaction: (character, type) => {
-      triggerHitReaction(character, type, switchAction);
-    },
+    gameStarted, player, enemy, punchTypes, audioManager, isVR, // Pasamos isVR aquí
+    triggerHitReaction: (character, type) => { triggerHitReaction(character, type, switchAction); },
   });
 
   updateAI({
-    player,
-    enemy,
-    playBoxAction,
-    startStepMovement: startCharacterStepMovement,
-    startEnemyCombo,
-    enemyPunches,
-    playNextComboAction,
-    playFightIdle,
+    player, enemy, playBoxAction, startStepMovement: startCharacterStepMovement,
+    startEnemyCombo, enemyPunches, playNextComboAction, playFightIdle, isVR // Y pasamos isVR aquí
   });
 
   renderer.render(scene, camera);

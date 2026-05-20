@@ -19,6 +19,7 @@ import { updateGameLoop } from "./src/core/GameLoop.js";
 import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
 import { setupGUI } from "./src/ui/GUIController.js";
+import { createHUDController } from "./src/ui/HUDController.js";
 // VR
 import { setupVR } from "./src/vr/VRManager.js";
 import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
@@ -89,6 +90,13 @@ let camDistMode1 = cameraConfig.camDistMode1;
 
 let gameStarted = false;
 let audioManager;
+let hudController; // NUEVO
+
+// --- SISTEMA DE ROUNDS Y ESTADOS ---
+let gameState = 'MENU'; // MENU, ANNOUNCING, FIGHTING, KO
+let currentRound = 1;
+let roundTimer = 60; // 1 minuto (60 segundos)
+let lastTime = 0;
 
 let playerIndex = 0;
 let enemyIndex = 0;
@@ -123,9 +131,7 @@ init();
 function init() {
   menuController = setupMenu({
     onFightStart: () => {
-      gameStarted = true;
-      audioManager.playBell();
-      audioManager.playFightMusic();
+      startNewMatch(); // LLAMADA AL NUEVO SISTEMA
     },
 
     onPlayerPrev: () => {
@@ -199,6 +205,10 @@ function init() {
   guiMorphsFolder = guiController.guiMorphsFolder;
 
   loadAsset(params.asset);
+
+  stats.dom.style.display = 'none'; // Adiós FPS
+  guiController.gui.hide();
+  hudController = createHUDController(camera);
 }
 
 //=================================================
@@ -220,27 +230,29 @@ vrPlayerRig = createVRPlayerRig({
 renderer.xr.addEventListener("sessionstart", () => {
   vrPlayerRig.enterVRPose();
   
-  // ¡NUEVO!: Iniciar el combate automáticamente al entrar en VR
-  if (!gameStarted) {
-    gameStarted = true;
-    
-    // Reproducir los audios de inicio (el visor ya nos da permiso porque hicimos clic en Enter VR)
-    if (audioManager) {
-      audioManager.playBell();
-      audioManager.playFightMusic();
-    }
-    
-    // Ocultar el menú HTML de la pantalla de la PC por si acaso
-    if (menuController && menuController.overlay) {
-      menuController.overlay.style.display = "none";
-    }
+  if (gameState === 'MENU') {
+      startNewMatch();
   }
 });
 
 renderer.xr.addEventListener("sessionend", () => {
   vrPlayerRig.exitVRPose();
   
-  // Opcional: Volver a mostrar el menú al salir de VR
+  // === LIMPIEZA EXTREMA: Restauramos el mundo 3D ===
+  // 1. Reseteamos el cuerpo invisible del VR a su origen para que no estorbe tus cámaras 1 y 2
+  vrPlayerRig.rig.position.set(0, 0, 0);
+  vrPlayerRig.rig.rotation.set(0, 0, 0);
+
+  // 2. Apagamos los HUDs a la fuerza
+  if (hudController) {
+      hudController.setVisible(false, false);
+  }
+
+  // 3. Reseteamos el estado para que sepa que estamos en el menú
+  gameState = 'MENU';
+  gameStarted = false;
+  
+  // 4. Volvemos a mostrar el menú al salir de VR
   if (menuController && menuController.overlay) {
     menuController.overlay.style.display = "flex";
   }
@@ -360,51 +372,38 @@ function onWindowResize() {
 }
 
 function animate() {
+  // ==============================
+  // ACTUALIZACIÓN DE HUD Y TIEMPO
+  // ==============================
+  if (gameState === 'FIGHTING') {
+      const now = performance.now(); // Usamos el tiempo real, sin afectar a Three.js
+      if (now - lastTime >= 1000) { // Si ya pasó 1 segundo (1000 milisegundos)
+          lastTime = now;
+          roundTimer--;
+          if (roundTimer <= 0) handleRoundEnd();
+      }
+  }
+
+  if (hudController && gameState !== 'MENU') {
+      const min = Math.floor(roundTimer / 60);
+      const sec = roundTimer % 60;
+      const timeStr = `${min}:${sec < 10 ? '0' : ''}${sec}`;
+      hudController.update(player.health, player.maxHealth, enemy.health, enemy.maxHealth, timeStr, currentRound, renderer.xr.isPresenting, gameState);
+  }
+
+  // Chequeo de K.O.
+  if ((player.isDead || enemy.isDead) && gameState === 'FIGHTING') {
+      handleKnockout();
+  }
+
   updateGameLoop({
-    clock,
-    player,
-    enemy,
-    gameStarted,
-    renderer,
-    scene,
-    camera,
-    stats,
-
-    vrPlayerRig,
-    playerHeadBone,
-    syncVRRigToPlayerHead,
-
-    vrButtonMapper,
-
-    updateVRLocomotion,
-
-    ringConfig,
-    punchTypes,
-    audioManager,
-
-    updateFacing,
-    updateStepMovement,
-    resolveBodyCollisions,
-    checkHits,
-    triggerHitReaction,
-    switchAction,
-    updateAI,
-    updateCamera,
-
-    playBoxAction,
-    startCharacterStepMovement,
-    startEnemyCombo,
-    enemyPunches,
-    playNextComboAction,
-    playFightIdle,
-
-    controls,
-    cameraMode,
-    camDistMode1,
-    cameraConfig,
-    idealLookAt,
-    idealPos,
-    currentLookAt,
+    clock, player, enemy, gameStarted, renderer, scene, camera, stats,
+    vrPlayerRig, playerHeadBone, syncVRRigToPlayerHead, vrButtonMapper, updateVRLocomotion,
+    playVRMovementAnimation, ringConfig, punchTypes, audioManager, updateFacing, updateStepMovement, resolveBodyCollisions,
+    checkHits, triggerHitReaction, switchAction, updateAI, updateCamera, playBoxAction,
+    startCharacterStepMovement, startEnemyCombo, enemyPunches, playNextComboAction, playFightIdle,
+    controls, cameraMode, camDistMode1, cameraConfig, idealLookAt, idealPos, currentLookAt,
+    gameState
   });
 }
 
@@ -415,4 +414,88 @@ function setGameReady() {
   if (vrManager) {
     vrManager.setVRReady();
   }
+}
+
+// ==========================================
+// LÓGICA DE ROUNDS Y K.O.
+// ==========================================
+function resetPositions() {
+  // Esquina Azul (Jugador)
+  player.model.position.set(-250, 40, -250);
+  // Esquina Roja (IA)
+  enemy.model.position.set(250, 40, 250);
+  
+  // Limpiar estados
+  player.isHit = false; enemy.isHit = false;
+  player.isMoving = false; enemy.isMoving = false;
+  player.isComboing = false; enemy.isComboing = false;
+  
+  playFightIdle(player);
+  playFightIdle(enemy);
+}
+
+function startNewMatch() {
+  // Balanceo de vida inicial
+  player.maxHealth = 100; player.health = 100; player.isDead = false;
+  enemy.maxHealth = 250; enemy.health = 250; enemy.isDead = false; // IA dura más
+  
+  currentRound = 1;
+  gameState = 'ANNOUNCING';
+  
+  if (menuController && menuController.overlay) menuController.overlay.style.display = "none";
+  hudController.setVisible(true, renderer.xr.isPresenting);
+  
+  startRoundSequence();
+}
+
+async function startRoundSequence() {
+  gameState = 'ANNOUNCING';
+  resetPositions();
+  
+  await hudController.showAnnouncer(`ROUND ${currentRound}`, 2000);
+  
+  // Empieza la pelea
+  audioManager.playBell();
+  if (currentRound === 1) audioManager.playFightMusic();
+  
+  roundTimer = 60;
+  lastTime = performance.now(); // NUEVO: Iniciamos el reloj seguro del navegador
+  gameState = 'FIGHTING';
+  gameStarted = true;
+}
+
+async function handleRoundEnd() {
+  gameState = 'ANNOUNCING';
+  audioManager.playBell();
+  
+  await hudController.showAnnouncer("FIN DEL ROUND", 2000);
+  
+  // Recuperan 15 puntos de vida
+  player.health = Math.min(player.maxHealth, player.health + 15);
+  enemy.health = Math.min(enemy.maxHealth, enemy.health + 15);
+  
+  currentRound++;
+  startRoundSequence();
+}
+
+async function handleKnockout() {
+  gameState = 'KO';
+  audioManager.playBell();
+  
+  await hudController.showAnnouncer("K.O.", 2500);
+  
+  const winner = player.isDead ? "¡IA OPONENTE GANA!" : "¡JUGADOR GANA!";
+  await hudController.showAnnouncer(winner, 3000);
+  
+  await hudController.showAnnouncer("JUEGO FINALIZADO", 2500);
+  
+  // Reiniciar juego y salir al menú
+  hudController.setVisible(false, renderer.xr.isPresenting);
+  
+  if (renderer.xr.isPresenting) {
+    renderer.xr.getSession().end(); // Cierra la VR
+  }
+  
+  if (menuController && menuController.overlay) menuController.overlay.style.display = "flex";
+  gameState = 'MENU';
 }

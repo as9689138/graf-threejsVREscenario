@@ -23,6 +23,11 @@ export function createCharacterData() {
         needsToEvade: false,
 
         // --- NUEVA VARIABLE: I-FRAMES ---
-        isEvading: false
+        isEvading: false,
+
+        // --- SISTEMA DE VIDA ---
+        maxHealth: 100, // Se sobrescribirá al cargar
+        health: 100,
+        isDead: false
     };
 }
