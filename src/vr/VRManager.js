@@ -28,10 +28,14 @@ export function setupVR({ renderer, scene }) {
 
   function setVRReady() {
     vrButton.style.display = "block";
+    vrButton.style.pointerEvents = "auto";
+    vrButton.style.opacity = "1";
   }
 
   function setVRLoading() {
     vrButton.style.display = "none";
+    vrButton.style.pointerEvents = "none";
+    vrButton.style.opacity = "0";
   }
 
   return {
@@ -41,6 +45,6 @@ export function setupVR({ renderer, scene }) {
     gripLeft,
     gripRight,
     setVRReady,
-    setVRLoading
+    setVRLoading,
   };
 }
