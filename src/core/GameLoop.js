@@ -1,3 +1,5 @@
+let flashTimer = 0;
+
 export function updateGameLoop({
   clock,
   player,
@@ -7,6 +9,8 @@ export function updateGameLoop({
   scene,
   camera,
   stats,
+  flashParticles,
+  composer,
 
   // VR
   vrPlayerRig,
@@ -48,6 +52,27 @@ export function updateGameLoop({
   currentLookAt,
 }) {
   const delta = clock.getDelta();
+
+  // ==========================================
+  // FLASHES
+  // ==========================================
+
+  flashTimer -= delta;
+
+  if (flashParticles) {
+
+     console.log("FLASH OK");
+
+    if (flashTimer <= 0) {
+      flashParticles.material.opacity = 1.0;
+
+      flashTimer = Math.random() * 1.5;
+    }
+
+    flashParticles.material.opacity *= 0.92;
+  }
+
+  // ==========================================
 
   if (player.mixer) player.mixer.update(delta);
   if (enemy.mixer) enemy.mixer.update(delta);
@@ -93,7 +118,11 @@ export function updateGameLoop({
   }
 
   if (!gameStarted) {
-    renderer.render(scene, camera);
+    if (renderer.xr.isPresenting) {
+      renderer.render(scene, camera);
+    } else {
+      composer.render();
+    }   
     stats.update();
     return;
   }
@@ -125,6 +154,10 @@ export function updateGameLoop({
     playFightIdle,
   });
 
-  renderer.render(scene, camera);
+  if (renderer.xr.isPresenting) {
+    renderer.render(scene, camera);
+  } else {
+    composer.render();
+  }
   stats.update();
 }

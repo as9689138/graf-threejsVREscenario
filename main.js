@@ -76,7 +76,8 @@ import {
 
 const manager = new THREE.LoadingManager();
 
-let camera, scene, renderer, stats, loader, guiMorphsFolder, controls;
+let camera, scene, renderer, composer, stats, loader, guiMorphsFolder, controls;
+let flashParticles;
 
 let player = createCharacterData();
 let enemy = createCharacterData();
@@ -165,6 +166,7 @@ function init() {
   camera = setup.camera;
   scene = setup.scene;
   renderer = setup.renderer;
+  composer = setup.composer;
   controls = setup.controls;
   stats = setup.stats;
 
@@ -181,7 +183,8 @@ function init() {
   //=================================================
   // Ring / Escenario
   //=================================================
-  createBoxingRing(scene, manager, ringConfig);
+  const ringData = createBoxingRing(scene, manager, ringConfig);
+  flashParticles = ringData.flashParticles;
 
   loader = new FBXLoader(manager);
 
@@ -348,6 +351,8 @@ function animate() {
     scene,
     camera,
     stats,
+    flashParticles,
+    composer,
 
     vrPlayerRig,
     playerHeadBone,

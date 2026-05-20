@@ -2,6 +2,9 @@ import * as THREE from "three";
 
 import Stats from "three/addons/libs/stats.module.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
 export function createSceneSetup({ animate }) {
   const container = document.createElement("div");
@@ -37,13 +40,28 @@ export function createSceneSetup({ animate }) {
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+  renderer.physicallyCorrectLights = true;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.toneMappingExposure = 0.95;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setAnimationLoop(animate);
   renderer.shadowMap.enabled = true;
+
+  const composer = new EffectComposer(renderer);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
+  const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      0.15,
+      0.2,
+      1
+  );
+  composer.addPass(bloomPass);
 
   //=================================================
   // CONTROLES
@@ -66,6 +84,7 @@ export function createSceneSetup({ animate }) {
     camera,
     scene,
     renderer,
+    composer,
     controls,
     stats,
   };
