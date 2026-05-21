@@ -1,4 +1,5 @@
-let flashTimer = 0;
+let flashTimer = Math.random() * 2.5;
+let flashIntensity = 0;
 
 export function updateGameLoop({
   clock,
@@ -61,15 +62,32 @@ export function updateGameLoop({
 
   if (flashParticles) {
 
-     console.log("FLASH OK");
+    const delta = clock.getDelta();
 
+    flashTimer -= delta;
+
+    flashParticles.material.uniforms.time.value += 0.02;
+
+    // 1. BASE (dinámico cada frame)
+    let baseOpacity =
+      Math.sin(performance.now() * 0.002) * 0.5 + 0.5;
+
+    // 2. EVENTO FLASH
     if (flashTimer <= 0) {
-      flashParticles.material.opacity = 1.0;
-
-      flashTimer = Math.random() * 1.5;
+      flashIntensity = 0.6 + Math.random() * 0.8;
+      flashTimer = 0.5 + Math.random() * 0.2;
     }
 
-    flashParticles.material.opacity *= 0.92;
+    // 3. DECAY
+    flashIntensity *= 0.96;
+
+    // 4. COMBINACIÓN FINAL (dinámica)
+    let flash = flashIntensity;
+
+    let finalOpacity = baseOpacity + flash;
+    finalOpacity = Math.min(finalOpacity, 1.5);
+
+    flashParticles.material.uniforms.uOpacity.value = finalOpacity;
   }
 
   // ==========================================

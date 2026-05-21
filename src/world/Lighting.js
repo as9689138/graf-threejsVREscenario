@@ -158,11 +158,11 @@ export function setupLighting(scene) {
 
         // POSICIÓN
         spot.position.set(x, y, z);
-
+        
         // CONFIGURACIÓN VISUAL
         spot.angle = Math.PI / 5;
         spot.penumbra = 1;
-        spot.decay = 0.6;
+        spot.decay = 0.75;
         spot.distance = spotlightDistance;
 
         // SOMBRAS
@@ -366,11 +366,49 @@ export function setupLighting(scene) {
         false
     );
     
+    //=================================================
+    // LUCES EXCLUSIVAS PARA POSTES
+    //=================================================
+    const inwardOffset = 80;   // qué tan dentro del ring entra la luz
+    const heightOffset = 160;  // altura sobre el poste
+    const postPositions = [
+        { x: 350, z: 350 },
+        { x: -350, z: 350 },
+        { x: -350, z: -350 },
+        { x: 350, z: -350 }
+    ];
 
-    //=================================================
-    // RIM LIGHTS
-    //=================================================
-    const rimLight = new THREE.DirectionalLight(0x88aaff, 2);
-    rimLight.position.set(0, 300, -600);
-    scene.add(rimLight);
+    postPositions.forEach(pos => {
+
+        const postLight = new THREE.PointLight(
+            0xb8b8b8,
+            10000,
+            100,
+            2
+        );
+
+        //=================================================
+        // MOVER HACIA AFUERA DEL POSTE
+        //=================================================
+        postLight.position.set(
+            pos.x * 0.85,   // se acerca al centro
+            heightOffset,
+            pos.z * 0.85
+        );
+
+        scene.add(postLight);
+
+        //=================================================
+        // HELPER
+        //=================================================
+        const helper = new THREE.PointLightHelper(
+            postLight,
+            10
+        );
+
+        scene.add(helper);
+
+    });
+
+
 }

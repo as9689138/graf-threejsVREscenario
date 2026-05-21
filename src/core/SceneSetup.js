@@ -22,6 +22,7 @@ export function createSceneSetup({ animate }) {
 
   camera.position.set(0, 350, 500);
 
+  
   //=================================================
   // ESCENA
   //=================================================
