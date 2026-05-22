@@ -401,12 +401,14 @@ export function setupLighting(scene) {
         //=================================================
         // HELPER
         //=================================================
+        /*
         const helper = new THREE.PointLightHelper(
             postLight,
             10
         );
 
         scene.add(helper);
+        */
 
     });
 
