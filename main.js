@@ -182,7 +182,7 @@ function init() {
   //=================================================
   // AUDIO
   //=================================================
-  audioManager = setupAudio(camera);
+  audioManager = setupAudio(camera, manager);
 
   //=================================================
   // Ring / Escenario
@@ -252,6 +252,8 @@ renderer.xr.addEventListener("sessionend", () => {
   // 3. Reseteamos el estado para que sepa que estamos en el menú
   gameState = "MENU";
   gameStarted = false;
+
+  audioManager.stopCrowd(); // Silenciar al público al forzar la salida
 
   // 4. Volvemos a mostrar el menú al salir de VR
   if (menuController && menuController.overlay) {
@@ -490,6 +492,7 @@ function startNewMatch() {
   if (menuController && menuController.overlay) menuController.overlay.style.display = "none";
 
   audioManager.stopMenuMusic(); // Cortamos la música del menú
+  audioManager.stopCrowd();     // Por si quedó reproduciendo de la partida anterior
   startCinematicSequence();     // ¡Inicia el show!
 }
 
@@ -503,6 +506,10 @@ function startCinematicSequence() {
   playVictoryAnimation(enemy);
 
   hudController.setVisible(false, renderer.xr.isPresenting);
+  
+  // ARRANCA LA EMOCIÓN DESDE LA FASE 1
+  audioManager.startCrowd(); 
+  
   runCinematicPhase(1);
 }
 
@@ -556,6 +563,8 @@ async function finishCinematic() {
   await hudController.showAnnouncer(`ROUND 1`, 2000);
   
   audioManager.playBell();
+  audioManager.playCrowdCheer(); // <-- VUELVE A SONAR EL GRITO AL EMPEZAR LA PELEA
+  
   roundTimer = 60;
   lastTime = performance.now();
   gameState = "FIGHTING";
@@ -569,7 +578,9 @@ async function startRoundSequence() {
   resetPositions();
 
   await hudController.showAnnouncer(`ROUND ${currentRound}`, 2000);
+  
   audioManager.playBell();
+  audioManager.playCrowdCheer(); // <-- VUELVE A SONAR EL GRITO AL EMPEZAR NUEVO ROUND
 
   roundTimer = 60;
   lastTime = performance.now();
@@ -634,6 +645,8 @@ async function handleKnockout({ winner, loser }) {
   // Pausa para que se vea la caída antes del texto
   await wait(500);
 
+  audioManager.stopCrowd();   // Silenciamos el loop normal del público
+  audioManager.playWinner();  // Disparamos la ovación del Ganador
   audioManager.playBell();
 
   updateHUD("KO");
