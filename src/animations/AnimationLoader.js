@@ -69,6 +69,9 @@ export function loadAllAnimations({
 
     hitBody: "Hit To Body",
     hitHead: "Big Hit To Head",
+
+    victory: "Victory",
+    knockedOut: "Knocked Out",
   };
 
   let loadedCount = 0;

@@ -56,7 +56,10 @@ export function updateGameLoop({
   currentLookAt,
 
   // Estado del juego
-  gameState
+  gameState,
+
+  // KO
+  onKnockout,
 }) {
   const delta = clock.getDelta();
 
@@ -167,6 +170,7 @@ export function updateGameLoop({
     punchTypes,
     audioManager,
     isVR,
+    onKnockout,
     triggerHitReaction: (character, type) => {
       triggerHitReaction(character, type, switchAction);
     }

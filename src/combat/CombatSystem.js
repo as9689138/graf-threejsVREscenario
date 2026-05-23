@@ -27,16 +27,41 @@ export function checkHits({
   punchTypes,
   audioManager,
   triggerHitReaction,
-  isVR // Recibimos la variable
+  isVR,
+  onKnockout
 }) {
   if (!gameStarted || !player.model || !enemy.model) return;
 
-  // Se la inyectamos a los evaluadores de golpe
-  evaluateHit({ attacker: player, defender: enemy, punchTypes, audioManager, triggerHitReaction, isVR });
-  evaluateHit({ attacker: enemy, defender: player, punchTypes, audioManager, triggerHitReaction, isVR });
+  evaluateHit({
+    attacker: player,
+    defender: enemy,
+    punchTypes,
+    audioManager,
+    triggerHitReaction,
+    isVR,
+    onKnockout
+  });
+
+  evaluateHit({
+    attacker: enemy,
+    defender: player,
+    punchTypes,
+    audioManager,
+    triggerHitReaction,
+    isVR,
+    onKnockout
+  });
 }
 
-export function evaluateHit({ attacker, defender, punchTypes, audioManager, triggerHitReaction, isVR }) {
+export function evaluateHit({
+  attacker,
+  defender,
+  punchTypes,
+  audioManager,
+  triggerHitReaction,
+  isVR,
+  onKnockout
+}) {
   // 1. Verificamos que el atacante esté golpeando y que el defensor no esté evadiendo (I-Frames)
   if (!attacker.currentPunch || attacker.hasHit || attacker.isHit || defender.isHit || defender.isEvading) {
     return;
@@ -71,14 +96,25 @@ export function evaluateHit({ attacker, defender, punchTypes, audioManager, trig
       // === B. RECIBIR DAÑO (Sistema de Vida) ===
       // Restamos 10 puntos de vida al que recibió el golpe
       defender.health -= 10;
-      
+
       // Verificamos si la vida llegó a cero (K.O.)
       if (defender.health <= 0) {
-          defender.health = 0;
-          defender.isDead = true;
+        defender.health = 0;
+        defender.isDead = true;
+        attacker.isWinner = true;
+
+        if (onKnockout) {
+          onKnockout({
+            winner: attacker,
+            loser: defender
+          });
+        }
+
+        return;
       }
 
       // === C. REACCIÓN DE DOLOR (Animación) ===
+      // Solo si sigue vivo
       triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
     }
   }

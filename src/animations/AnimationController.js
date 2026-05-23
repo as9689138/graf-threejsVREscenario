@@ -154,3 +154,81 @@ export function playVRMovementAnimation(character, name) {
 
   switchAction(character, action, 0.12);
 }
+
+export function playVictoryAnimation(character) {
+  if (!character || !character.actions) return;
+
+  const action = character.actions.victory;
+
+  if (!action) {
+    console.warn("No existe la animación victory en actions");
+    console.log("Actions disponibles:", Object.keys(character.actions));
+    return;
+  }
+
+  character.isCelebrating = true;
+  character.isKnockedOut = false;
+
+  character.isMoving = true;
+  character.isComboing = false;
+  character.comboQueue = [];
+  character.currentPunch = null;
+  character.hasHit = false;
+  character.moveData = null;
+  character.isHit = false;
+
+  character.mixer.stopAllAction();
+
+  action.reset();
+  action.enabled = true;
+  action.paused = false;
+  action.time = 0;
+  action.setEffectiveWeight(1);
+  action.setEffectiveTimeScale(1);
+  action.setLoop(THREE.LoopRepeat);
+  action.play();
+
+  character.activeAction = action;
+}
+
+export function playKnockoutAnimation(character) {
+  if (!character || !character.actions) return;
+
+  const action = character.actions.knockedOut;
+
+  if (!action) {
+    console.warn("No existe la animación knockedOut en actions");
+    console.log("Actions disponibles:", Object.keys(character.actions));
+    return;
+  }
+
+  console.log("Reproduciendo knockedOut:", action.getClip().name);
+  console.log("Duración knockedOut:", action.getClip().duration);
+
+  character.isKnockedOut = true;
+  character.isCelebrating = false;
+
+  character.isDead = true;
+  character.isMoving = true;
+  character.isComboing = false;
+  character.comboQueue = [];
+  character.currentPunch = null;
+  character.hasHit = false;
+  character.moveData = null;
+  character.isHit = false;
+
+  // Detener absolutamente todas las acciones del mixer
+  character.mixer.stopAllAction();
+
+  action.reset();
+  action.enabled = true;
+  action.paused = false;
+  action.time = 0;
+  action.setEffectiveWeight(1);
+  action.setEffectiveTimeScale(1);
+  action.setLoop(THREE.LoopOnce);
+  action.clampWhenFinished = true;
+  action.play();
+
+  character.activeAction = action;
+}

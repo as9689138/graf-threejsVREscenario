@@ -35,8 +35,11 @@ import {
   playPunchAction,
   startEnemyCombo,
   playNextComboAction,
+  playVictoryAnimation,
+  playKnockoutAnimation,
   //VR
   playVRMovementAnimation,
+
 } from "./src/animations/AnimationController.js";
 
 import {
@@ -100,6 +103,8 @@ let playerIndex = 0;
 let enemyIndex = 0;
 
 let menuController;
+
+let knockoutHandled = false;
 
 // VARIABLES DE REALIDAD VIRTUAL
 let vrManager;
@@ -379,26 +384,7 @@ function animate() {
     }
   }
 
-  if (hudController && gameState !== "MENU") {
-    const min = Math.floor(roundTimer / 60);
-    const sec = roundTimer % 60;
-    const timeStr = `${min}:${sec < 10 ? "0" : ""}${sec}`;
-    hudController.update(
-      player.health,
-      player.maxHealth,
-      enemy.health,
-      enemy.maxHealth,
-      timeStr,
-      currentRound,
-      renderer.xr.isPresenting,
-      gameState,
-    );
-  }
-
-  // Chequeo de K.O.
-  if ((player.isDead || enemy.isDead) && gameState === "FIGHTING") {
-    handleKnockout();
-  }
+  updateHUD();
 
   updateGameLoop({
     clock,
@@ -456,6 +442,9 @@ function animate() {
 
     // Estado del juego
     gameState,
+
+    // KO
+    onKnockout: handleKnockout,
   });
 }
 
@@ -484,6 +473,12 @@ function resetPositions() {
   player.isComboing = false;
   enemy.isComboing = false;
 
+  player.isKnockedOut = false;
+  enemy.isKnockedOut = false;
+
+  player.isCelebrating = false;
+  enemy.isCelebrating = false;
+
   playFightIdle(player);
   playFightIdle(enemy);
 }
@@ -508,6 +503,8 @@ function startNewMatch() {
 }
 
 async function startRoundSequence() {
+  knockoutHandled = false;
+
   gameState = "ANNOUNCING";
   resetPositions();
 
@@ -537,25 +534,77 @@ async function handleRoundEnd() {
   startRoundSequence();
 }
 
-async function handleKnockout() {
+function updateHUD(forcedState = gameState) {
+  if (!hudController || forcedState === "MENU") return;
+
+  const min = Math.floor(roundTimer / 60);
+  const sec = roundTimer % 60;
+  const timeStr = `${min}:${sec < 10 ? "0" : ""}${sec}`;
+
+  hudController.update(
+    player.health,
+    player.maxHealth,
+    enemy.health,
+    enemy.maxHealth,
+    timeStr,
+    currentRound,
+    renderer.xr.isPresenting,
+    forcedState
+  );
+}
+
+async function handleKnockout({ winner, loser }) {
+  if (knockoutHandled) return;
+  knockoutHandled = true;
+
+  // Primero cerramos la vida del perdedor
+  loser.health = 0;
+  loser.isDead = true;
+
+  // Actualizamos visualmente la barra ANTES de cambiar a KO
+  updateHUD("FIGHTING");
+
+  // Damos tiempo a que el navegador pinte la barra en 0
+  await wait(400);
+
+  // Ahora sí congelamos la pelea
   gameState = "KO";
+  gameStarted = false;
+
+  playKnockoutAnimation(loser);
+  playVictoryAnimation(winner);
+
+  // Pausa para que se vea la caída antes del texto
+  await wait(500);
+
   audioManager.playBell();
 
-  await hudController.showAnnouncer("K.O.", 2500);
+  updateHUD("KO");
 
-  const winner = player.isDead ? "¡IA OPONENTE GANA!" : "¡JUGADOR GANA!";
-  await hudController.showAnnouncer(winner, 3000);
+  await hudController.showAnnouncer("K.O.", 2000);
+
+  const winnerText =
+    winner === player
+      ? "¡JUGADOR GANA!"
+      : "¡IA OPONENTE GANA!";
+
+  await hudController.showAnnouncer(winnerText, 3000);
 
   await hudController.showAnnouncer("JUEGO FINALIZADO", 2500);
 
-  // Reiniciar juego y salir al menú
   hudController.setVisible(false, renderer.xr.isPresenting);
 
   if (renderer.xr.isPresenting) {
-    renderer.xr.getSession().end(); // Cierra la VR
+    renderer.xr.getSession().end();
   }
 
-  if (menuController && menuController.overlay)
+  if (menuController && menuController.overlay) {
     menuController.overlay.style.display = "flex";
+  }
+
   gameState = "MENU";
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

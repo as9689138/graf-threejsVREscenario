@@ -9,12 +9,15 @@ export function bindAnimations({
   playNextComboAction,
   checkAndPlayMovement,
   playBoxAction,
-  startStepMovement
+  startStepMovement,
 }) {
   for (const name in allClips) {
     const action = character.mixer.clipAction(allClips[name]);
 
-    if (name === "readyIdle" || name === "fightIdle") {
+    if (name === "readyIdle" || 
+      name === "fightIdle" || 
+      name === "victory"
+    ) {
       action.setLoop(THREE.LoopRepeat);
     } else {
       action.setLoop(THREE.LoopOnce);
@@ -28,6 +31,11 @@ export function bindAnimations({
   character.mixer.addEventListener("finished", function (event) {
     if (event.action === character.actions.readyIdle) return;
     if (event.action === character.actions.fightIdle) return;
+    if (event.action === character.actions.victory) return;
+
+    // Estado final: no regresar a idle
+    if (character.isKnockedOut) return;
+    if (character.isCelebrating) return;
 
     character.currentPunch = null;
     character.hasHit = false;
