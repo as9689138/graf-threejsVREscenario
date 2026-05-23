@@ -6,7 +6,7 @@ export function createVRButtonMapper({
   const previousButtons = new Map();
 
   function isPressed(button) {
-    return button && button.pressed;
+    return !!button && (button.pressed || button.value > 0.5);
   }
 
   function wasPressed(source, index) {
