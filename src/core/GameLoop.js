@@ -96,19 +96,21 @@ export function updateGameLoop({
   // ==========================================
   // INPUT Y LOCOMOCIÓN VR
   // ==========================================
-  if (renderer.xr.isPresenting && vrButtonMapper) {
-    vrButtonMapper.update();
-  }
+  if (gameState === "FIGHTING") {
+    if (renderer.xr.isPresenting && vrButtonMapper) {
+      vrButtonMapper.update();
+    }
 
-  if (renderer.xr.isPresenting && updateVRLocomotion) {
-    updateVRLocomotion({
-      renderer,
-      player,
-      delta,
-      ringConfig,
-      playVRMovementAnimation,
-      playFightIdle
-    });
+    if (renderer.xr.isPresenting && updateVRLocomotion) {
+      updateVRLocomotion({
+        renderer,
+        player,
+        delta,
+        ringConfig,
+        playVRMovementAnimation,
+        playFightIdle
+      });
+    }
   }
 
   // ==========================================

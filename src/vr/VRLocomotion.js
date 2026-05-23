@@ -99,7 +99,14 @@ export function updateVRLocomotion({
       // REGRESAR A IDLE
       //=================================================
       if (stickX === 0 && stickY === 0) {
-        if (playFightIdle && !player.currentPunch && !player.isHit) {
+        if (
+          playFightIdle &&
+          !player.currentPunch &&
+          !player.isHit &&
+          !player.isKnockedOut &&
+          !player.isCelebrating &&
+          !player.isDead
+        ) {
           playFightIdle(player);
         }
       }

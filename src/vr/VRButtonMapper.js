@@ -27,6 +27,16 @@ export function createVRButtonMapper({
     const renderer = getRenderer();
     const player = getPlayer();
 
+    if (
+      !player ||
+      !player.actions ||
+      player.isDead ||
+      player.isKnockedOut ||
+      player.isCelebrating
+    ) {
+      return;
+    }
+
     if (!renderer || !renderer.xr) return;
     if (!player || !player.actions) return;
 
