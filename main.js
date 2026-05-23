@@ -56,9 +56,9 @@ import {
   ringConfig,
 } from "./src/config/gameConfig.js";
 
-import {
-  updateCamera,
-  handleCameraZoom,
+import { updateCamera, 
+  handleCameraZoom, 
+  updateCinematicCamera 
 } from "./src/camera/CameraController.js";
 
 import {
@@ -98,6 +98,8 @@ let gameState = "MENU"; // MENU, ANNOUNCING, FIGHTING, KO
 let currentRound = 1;
 let roundTimer = 60; // 1 minuto (60 segundos)
 let lastTime = 0;
+
+let cinematicState = { phase: 0, time: 0 };
 
 let playerIndex = 0;
 let enemyIndex = 0;
@@ -254,6 +256,7 @@ renderer.xr.addEventListener("sessionend", () => {
   // 4. Volvemos a mostrar el menú al salir de VR
   if (menuController && menuController.overlay) {
     menuController.overlay.style.display = "flex";
+    audioManager.playMenuMusic();
   }
 });
 
@@ -445,6 +448,9 @@ function animate() {
 
     // KO
     onKnockout: handleKnockout,
+
+    updateCinematicCamera, 
+    cinematicState
   });
 }
 
@@ -460,62 +466,113 @@ function setGameReady() {
 // LÓGICA DE ROUNDS Y K.O.
 // ==========================================
 function resetPositions() {
-  // Esquina Azul (Jugador)
   player.model.position.set(-250, 40, -250);
-  // Esquina Roja (IA)
   enemy.model.position.set(250, 40, 250);
 
-  // Limpiar estados
-  player.isHit = false;
-  enemy.isHit = false;
-  player.isMoving = false;
-  enemy.isMoving = false;
-  player.isComboing = false;
-  enemy.isComboing = false;
+  player.isHit = false; enemy.isHit = false;
+  player.isMoving = false; enemy.isMoving = false;
+  player.isComboing = false; enemy.isComboing = false;
+  player.isKnockedOut = false; enemy.isKnockedOut = false;
+  player.isCelebrating = false; enemy.isCelebrating = false;
 
-  player.isKnockedOut = false;
-  enemy.isKnockedOut = false;
-
-  player.isCelebrating = false;
-  enemy.isCelebrating = false;
-
-  playFightIdle(player);
-  playFightIdle(enemy);
+  // Solo los ponemos en "Guardia" si NO están en medio de la entrada épica
+  if (gameState !== "CINEMATIC") {
+    playFightIdle(player);
+    playFightIdle(enemy);
+  }
 }
 
 function startNewMatch() {
-  // Balanceo de vida inicial
-  player.maxHealth = 100;
-  player.health = 100;
-  player.isDead = false;
-  enemy.maxHealth = 250;
-  enemy.health = 250;
-  enemy.isDead = false; // IA dura más
-
+  player.maxHealth = 100; player.health = 100; player.isDead = false;
+  enemy.maxHealth = 250; enemy.health = 250; enemy.isDead = false;
   currentRound = 1;
+
+  if (menuController && menuController.overlay) menuController.overlay.style.display = "none";
+
+  audioManager.stopMenuMusic(); // Cortamos la música del menú
+  startCinematicSequence();     // ¡Inicia el show!
+}
+
+function startCinematicSequence() {
+  gameState = "CINEMATIC";
+  knockoutHandled = false;
+  resetPositions();
+
+  // Los peleadores inician celebrando (bucle)
+  playVictoryAnimation(player);
+  playVictoryAnimation(enemy);
+
+  hudController.setVisible(false, renderer.xr.isPresenting);
+  runCinematicPhase(1);
+}
+
+function runCinematicPhase(phase) {
+  cinematicState.phase = phase;
+  cinematicState.time = 0;
+
+  if (renderer.xr.isPresenting) setupVRCinematicPose(phase);
+
+  if (phase > 4) {
+    finishCinematic();
+    return;
+  }
+
+  // Reproduce el audio de la fase y al terminar salta a la siguiente
+  audioManager.playCinematicPhase(phase, () => {
+    if (gameState === "CINEMATIC") runCinematicPhase(phase + 1);
+  });
+}
+
+function setupVRCinematicPose(phase) {
+  if (phase === 1) {
+    // Fase 1: Mirando 45 grados hacia abajo (para clavar la vista en el logo)
+    vrPlayerRig.rig.rotation.set(-Math.PI / 4, 0, 0); 
+  } else if (phase === 2) {
+    // Fase 2: Mirando hacia la esquina del JUGADOR
+    vrPlayerRig.rig.rotation.set(0, Math.PI * 0.25, 0); 
+  } else if (phase === 3) {
+    // Fase 3: Mirando hacia la esquina del OPONENTE
+    vrPlayerRig.rig.rotation.set(0, -Math.PI * 0.75, 0);
+  } else if (phase === 4) {
+    // Fase 4: Entrando al cuerpo
+    vrPlayerRig.rig.rotation.set(0, 0, 0);
+  }
+}
+
+async function finishCinematic() {
+  // === ESTA ES LA CLAVE PARA DESCONGELARLOS ===
+  player.isCelebrating = false;
+  enemy.isCelebrating = false;
+  player.isMoving = false;
+  enemy.isMoving = false;
+
+  // Transición suave de la celebración a la guardia de pelea
+  playReadyIdle(player, playIntroToFight);
+  playReadyIdle(enemy, playIntroToFight);
+
   gameState = "ANNOUNCING";
-
-  if (menuController && menuController.overlay)
-    menuController.overlay.style.display = "none";
   hudController.setVisible(true, renderer.xr.isPresenting);
-
-  startRoundSequence();
+  
+  await hudController.showAnnouncer(`ROUND 1`, 2000);
+  
+  audioManager.playBell();
+  roundTimer = 60;
+  lastTime = performance.now();
+  gameState = "FIGHTING";
+  gameStarted = true;
 }
 
 async function startRoundSequence() {
+  // Esto se usa exclusivamente para el Round 2, 3, etc.
   knockoutHandled = false;
-
   gameState = "ANNOUNCING";
   resetPositions();
 
   await hudController.showAnnouncer(`ROUND ${currentRound}`, 2000);
-
-  // Empieza la pelea
   audioManager.playBell();
-  if (currentRound === 1) audioManager.playFightMusic();
 
   roundTimer = 60;
-  lastTime = performance.now(); // NUEVO: Iniciamos el reloj seguro del navegador
+  lastTime = performance.now();
   gameState = "FIGHTING";
   gameStarted = true;
 }
@@ -600,6 +657,7 @@ async function handleKnockout({ winner, loser }) {
 
   if (menuController && menuController.overlay) {
     menuController.overlay.style.display = "flex";
+    audioManager.playMenuMusic();
   }
 
   gameState = "MENU";

@@ -62,3 +62,32 @@ export function handleCameraZoom({
     cameraConfig.maxCamDist1
   );
 }
+
+export function updateCinematicCamera({ camera, timeElapsed, phase, player, enemy }) {
+  if (!player.model || !enemy.model) return;
+
+  if (phase === 1) {
+    // Vista Dron: Gira alrededor del centro de forma majestuosa
+    const radius = 550;
+    const speed = 0.3; 
+    camera.position.set(Math.cos(timeElapsed * speed) * radius, 280, Math.sin(timeElapsed * speed) * radius);
+    camera.lookAt(0, 40, 0); 
+
+  } else if (phase === 2) {
+    // Paneo Jugador (Esquina Azul: -250, -250)
+    const startY = 10;
+    const currentY = startY + (timeElapsed * 20); // Sube la mirada poco a poco
+    const clampedY = Math.min(currentY, 150); 
+    camera.position.set(-140, clampedY - 10, -140);
+    camera.lookAt(-250, clampedY, -250);
+
+  } else if (phase === 3) {
+    // Paneo Enemigo (Esquina Roja: 250, 250)
+    const startY = 10;
+    const currentY = startY + (timeElapsed * 20);
+    const clampedY = Math.min(currentY, 150);
+    camera.position.set(140, clampedY - 10, 140);
+    camera.lookAt(250, clampedY, 250);
+  }
+  // (La Fase 4 usa la cámara de combate normal para hacer la transición suave hacia la espalda del jugador)
+}

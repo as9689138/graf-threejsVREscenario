@@ -94,9 +94,9 @@ export function createBoxingRing(scene, manager, ringConfig) {
     //=================================================
     const postHeight = 120;
     const postData = [ 
-        { x: 350, z: 350, color: 0xad0202 }, // rojo 
+        { x: 350, z: 350, color: 0x004aab }, // rojo 
         { x: -350, z: 350, color: 0xc7c5c5 }, // blanco 
-        { x: -350, z: -350, color: 0x004aab }, // azul 
+        { x: -350, z: -350, color: 0xad0202 }, // azul 
         { x: 350, z: -350, color: 0xc7c5c5 } // blanco 
     ];
 

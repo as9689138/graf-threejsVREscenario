@@ -60,6 +60,9 @@ export function updateGameLoop({
 
   // KO
   onKnockout,
+
+  updateCinematicCamera, 
+  cinematicState
 }) {
   const delta = clock.getDelta();
 
@@ -114,7 +117,61 @@ export function updateGameLoop({
   }
 
   // ==========================================
-  // ORIENTACIÓN Y CÁMARA
+  // SI ESTÁ EN CINEMÁTICA (ENTRADA ÉPICA)
+  // ==========================================
+  if (gameState === "CINEMATIC") {
+    cinematicState.time += delta;
+    updateFacing(player, enemy); // Para que se miren fijo
+
+    if (renderer.xr.isPresenting) {
+      // --- CINEMÁTICA VR CORREGIDA ---
+      if (cinematicState.phase === 1) {
+        // Fase 1: Efecto Grúa con LÍMITE DE ALTURA
+        const startY = 60; // Un poco arriba de la lona
+        const startZ = 20; // Ligero desfase
+        const moveSpeed = cinematicState.time * 25; // Velocidad de alejamiento
+        
+        // LIMITAMOS EL MOVIMIENTO: Máximo 240 unidades de recorrido.
+        // Esto significa que la altura máxima será 300 (60 + 240), 
+        // manteniéndote a salvo por debajo del armazón de luces que está en 400.
+        const currentMove = Math.min(moveSpeed, 240);
+        
+        vrPlayerRig.rig.position.set(0, startY + currentMove, startZ + currentMove);
+
+      } else if (cinematicState.phase === 2) {
+        // Fase 2: Dolly-Up del jugador (INICIA ARRIBA DE LA LONA)
+        const startY = 50; 
+        const upSpeed = cinematicState.time * 25;
+        const currentY = Math.min(startY + upSpeed, 155); 
+        vrPlayerRig.rig.position.set(-180, currentY, -180);
+
+      } else if (cinematicState.phase === 3) {
+        // Fase 3: Dolly-Up del oponente (INICIA ARRIBA DE LA LONA)
+        const startY = 50; 
+        const upSpeed = cinematicState.time * 25;
+        const currentY = Math.min(startY + upSpeed, 155); 
+        vrPlayerRig.rig.position.set(180, currentY, 180);
+
+      } else if (cinematicState.phase === 4) {
+        // Fase 4: Entrando a la cabeza para pelear
+        syncVRRigToPlayerHead({ vrPlayerRig, headBone: playerHeadBone, player, camera });
+      }
+    } else {
+      // --- CINEMÁTICA 3D (DRON) ---
+      if (cinematicState.phase === 4) {
+        updateCamera({ player, enemy, camera, controls, cameraMode, camDistMode1, cameraConfig, idealLookAt, idealPos, currentLookAt });
+      } else {
+        updateCinematicCamera({ camera, timeElapsed: cinematicState.time, phase: cinematicState.phase, player, enemy });
+      }
+    }
+
+    renderFrame({ renderer, scene, camera, composer });
+    stats.update();
+    return; // Evita que se ejecute el resto de cámaras
+  }
+
+  // ==========================================
+  // ORIENTACIÓN Y CÁMARA (NORMAL)
   // ==========================================
   updateFacing(player, enemy);
 
