@@ -96,6 +96,27 @@ export function updateGameLoop({
   if (player.mixer) player.mixer.update(delta);
   if (enemy.mixer)  enemy.mixer.update(delta);
 
+  // =================================================
+  // LIMITAR PERSONAJES DENTRO DEL RING DURANTE KO
+  // =================================================
+  const ringLimit = 304;
+
+  [player, enemy].forEach((fighter) => {
+    if (!fighter.model) return;
+
+    fighter.model.position.x = THREE.MathUtils.clamp(
+      fighter.model.position.x,
+      -ringLimit,
+      ringLimit
+    );
+
+    fighter.model.position.z = THREE.MathUtils.clamp(
+      fighter.model.position.z,
+      -ringLimit,
+      ringLimit
+    );
+  });
+
   // ══════════════════════════════════════════════════════════════════════════
   // INPUT Y LOCOMOCIÓN VR
   // ══════════════════════════════════════════════════════════════════════════
