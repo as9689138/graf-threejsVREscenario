@@ -60,6 +60,15 @@ export function updateCamera({
     currentLookAt.copy(idealLookAt);
     camera.lookAt(currentLookAt);
 
+    if (controls) {
+      controls.target.copy(currentLookAt);
+
+      // SINCRONIZAR ORBITCONTROLS COMPLETAMENTE
+      controls.object.position.copy(camera.position);
+
+      controls.update();
+    }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // CÁMARA 2 — Órbita libre con OrbitControls
   // ═══════════════════════════════════════════════════════════════════════════
@@ -101,7 +110,7 @@ export function handleCameraZoom({
 // ─────────────────────────────────────────────────────────────────────────────
 // CÁMARA CINEMÁTICA DE ENTRADA ÉPICA
 // ─────────────────────────────────────────────────────────────────────────────
-export function updateCinematicCamera({ camera, timeElapsed, phase, player, enemy }) {
+export function updateCinematicCamera({camera, controls, timeElapsed, phase, player, enemy}) {
   if (!player.model || !enemy.model) return;
 
   if (phase === 1) {
@@ -114,22 +123,44 @@ export function updateCinematicCamera({ camera, timeElapsed, phase, player, enem
     );
     camera.lookAt(0, 80, 0);
 
+    if (controls) {
+      controls.target.set(0, 80, 0);
+
+      controls.object.position.copy(camera.position);
+
+      controls.update();
+    }
+
   } else if (phase === 2) {
     const clampedY = Math.min(80 + timeElapsed * 20, 150);
     camera.position.set(-150, clampedY, -150);
     camera.lookAt(-250, clampedY + 10, -250);
+    if (controls) {
+      controls.target.set(-250, clampedY + 10, -250);
+
+      controls.object.position.copy(camera.position);
+
+      controls.update();
+    }
 
   } else if (phase === 3) {
     const clampedY = Math.min(80 + timeElapsed * 20, 150);
     camera.position.set(150, clampedY, 150);
     camera.lookAt(250, clampedY + 10, 250);
+    if (controls) {
+      controls.target.set(250, clampedY + 10, 250);
+
+      controls.object.position.copy(camera.position);
+
+      controls.update();
+    }
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CÁMARA DRON DE VICTORIA
 // ─────────────────────────────────────────────────────────────────────────────
-export function updateVictoryCamera({ camera, timeElapsed, winner }) {
+export function updateVictoryCamera({camera, controls, timeElapsed, winner}) {
   if (!winner || !winner.model) return;
 
   const radius = 250;
@@ -148,4 +179,11 @@ export function updateVictoryCamera({ camera, timeElapsed, winner }) {
   );
 
   camera.lookAt(wx, faceY, wz);
+  if (controls) {
+    controls.target.set(wx, faceY, wz);
+
+    controls.object.position.copy(camera.position);
+
+    controls.update();
+  }
 }

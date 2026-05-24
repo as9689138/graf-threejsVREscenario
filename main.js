@@ -500,6 +500,24 @@ function startNewMatch() {
   audioManager.stopMenuMusic(); // Cortamos la música del menú
   audioManager.stopCrowd();     // Por si quedó reproduciendo de la partida anterior
   audioManager.stopFinalCrowd(); // Paramos sonido de victoria anterior
+
+  // RESET FUERTE DE CÁMARA Y CONTROLS
+  camera.position.set(0, 120, 300);
+
+  camera.rotation.set(0, 0, 0);
+  camera.quaternion.identity();
+
+  camera.updateMatrixWorld(true);
+  camera.updateProjectionMatrix();
+
+  if (controls) {
+    controls.target.set(0, 90, 0);
+
+    controls.object.position.copy(camera.position);
+
+    controls.update();
+  }
+
   startCinematicSequence();     // ¡Inicia el show!
 }
 
