@@ -701,14 +701,30 @@ function runVictoryPhase(phase) {
 
   // Lógica de textos según fase
   let text = "";
-  if (phase === 2) text = "K.O.";
-  if (phase === 3) text = victoryState.isPlayerWinner ? "¡JUGADOR GANA!" : "¡IA OPONENTE GANA!";
-  if (phase === 4) text = ""; // Limpiamos pantalla
+
+  let color = "#ff0000";
+
+  if (phase === 2) {
+    text = "K.O.";
+    color = "#ff0000";
+  }
+
+  if (phase === 3) {
+    if (victoryState.isPlayerWinner) {
+      text = "¡JUGADOR GANA!";
+      color = "#ff0000";
+    } else {
+      text = "¡IA OPONENTE GANA!";
+      color = "#0066ff";
+    }
+  }
+
+  if (phase === 4) text = "";
   if (phase === 5) text = "JUEGO FINALIZADO";
 
   if (text !== "") {
     if (renderer.xr.isPresenting) hudController.setVisible(true, true);
-    hudController.showAnnouncer(text, 20000);
+    hudController.showAnnouncer(text, 20000, color);
   } else if (phase === 4) {
     document.getElementById("announcer").style.display = "none";
     if (renderer.xr.isPresenting) hudController.showAnnouncer("", 10);

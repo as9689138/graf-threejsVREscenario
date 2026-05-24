@@ -66,7 +66,7 @@ export function setupAudio(camera, manager) {
   audioLoader.load("assets/audio/final_bell_r.mp3", function(buffer) {
     finalBell.setBuffer(buffer);
     finalBell.setLoop(true);
-    finalBell.setVolume(1.4);
+    finalBell.setVolume(1.5);
   });
 
   audioLoader.load("assets/audio/Gente_Final.mp3", function(buffer) {

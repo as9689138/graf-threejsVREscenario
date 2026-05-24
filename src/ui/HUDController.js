@@ -112,12 +112,14 @@ export function createHUDController(camera) {
         }
     }
 
-    function showAnnouncer(text, duration = 2000) {
+    function showAnnouncer(text, duration = 2000, color = "#ff0000") {
         return new Promise(resolve => {
             // === RUTINA PARA PC (3D NORMAL) ===
             if (!currentIsVR) {
                 htmlAnnouncer.textContent = text;
                 htmlAnnouncer.style.display = "block";
+                htmlAnnouncer.style.color = "#ffffff";
+                htmlAnnouncer.style.textShadow = `0px 0px 20px ${color}, 4px 4px 0px #000`;
                 vrHUD.visible = false; // Apagamos a la fuerza el panel fantasma
             } 
             // === RUTINA PARA REALIDAD VIRTUAL ===
@@ -128,11 +130,14 @@ export function createHUDController(camera) {
                 ctx.fillStyle = "rgba(0,0,0,0.8)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                ctx.fillStyle = "#ff0000";
+                ctx.fillStyle = "#ffffff";
                 ctx.font = "bold 150px Arial"; 
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 40;
                 ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                ctx.shadowBlur = 0;
                 
                 ctx.textBaseline = "alphabetic"; 
                 ctx.textAlign = "left"; 
