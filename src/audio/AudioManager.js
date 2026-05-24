@@ -16,7 +16,7 @@ export function setupAudio(camera, manager) {
   });
 
   //=================================================
-  // CINEMÁTICA (LOS 4 AUDIOS)
+  // CINEMÁTICA INICIAL
   //=================================================
   const intro1 = new Audio(listener);
   const intro2 = new Audio(listener);
@@ -29,7 +29,7 @@ export function setupAudio(camera, manager) {
   audioLoader.load("assets/audio/p4_inicio.mp3", (b) => intro4.setBuffer(b));
 
   //=================================================
-  // AMBIENTE DE MULTITUD (NUEVOS)
+  // AMBIENTE DE MULTITUD (PELEA)
   //=================================================
   const crowdLoop = new Audio(listener);
   audioLoader.load("assets/audio/Gente loop.mp3", function (buffer) {
@@ -41,7 +41,7 @@ export function setupAudio(camera, manager) {
   const crowdStart = new Audio(listener);
   audioLoader.load("assets/audio/Gente_Inicio.mp3", (b) => {
     crowdStart.setBuffer(b);
-    crowdStart.setVolume(0.5); // Volumen ajustado a 0.5 como pediste
+    crowdStart.setVolume(0.5);
   });
 
   const ovationPlayer = new Audio(listener);
@@ -51,17 +51,43 @@ export function setupAudio(camera, manager) {
   });
 
   const ovationEnemy = new Audio(listener);
-  // Reemplazado para que use el mismo archivo de Ovacion.mp3
   audioLoader.load("assets/audio/Ovacion.mp3", (b) => {
     ovationEnemy.setBuffer(b);
     ovationEnemy.setVolume(1.0);
   });
 
-  const winnerSound = new Audio(listener);
-  audioLoader.load("assets/audio/Ganador.mp3", (b) => {
-    winnerSound.setBuffer(b);
-    winnerSound.setVolume(1.0);
+  //=================================================
+  // AMBIENTE FINAL Y VOCES DE VICTORIA
+  //=================================================
+  const finalCrowdLoop = new Audio(listener);
+
+  const finalBell = new Audio(listener);
+
+  audioLoader.load("assets/audio/final_bell_r.mp3", function(buffer) {
+    finalBell.setBuffer(buffer);
+    finalBell.setLoop(true);
+    finalBell.setVolume(1.4);
   });
+
+  audioLoader.load("assets/audio/Gente_Final.mp3", function(buffer) {
+    finalCrowdLoop.setBuffer(buffer);
+    finalCrowdLoop.setLoop(true);
+    finalCrowdLoop.setVolume(0.6);
+  });
+
+  const grAudios = [];
+  const gaAudios = [];
+
+  for (let i = 1; i <= 5; i++) {
+    const gr = new Audio(listener);
+    // CORRECCIÓN: Amplificamos a 3.0 para que se escuchen fuerte
+    audioLoader.load(`assets/audio/GR_${i}.mp3`, (b) => { gr.setBuffer(b); gr.setVolume(1.5); });
+    grAudios.push(gr);
+
+    const ga = new Audio(listener);
+    audioLoader.load(`assets/audio/GA_${i}.mp3`, (b) => { ga.setBuffer(b); ga.setVolume(1.5); });
+    gaAudios.push(ga);
+  }
 
   //=================================================
   // EFECTOS (CAMPANA Y GOLPE)
@@ -81,77 +107,55 @@ export function setupAudio(camera, manager) {
   });
 
   //=================================================
-  // ACTIVAR AUDIO Y CONTROLES
+  // FUNCIONES DE CONTROL
   //=================================================
   window.addEventListener("click", () => {
     const menu = document.getElementById("menuOverlay");
     if (menu && menu.style.display !== "none") {
-      if (!sound.isPlaying && sound.buffer) {
-        sound.play();
-      }
+      if (!sound.isPlaying && sound.buffer) sound.play();
     }
   });
 
-  function stopMenuMusic() {
-    if (sound.isPlaying) sound.stop();
-  }
-
-  function playMenuMusic() {
-    if (!sound.isPlaying && sound.buffer) sound.play();
-  }
+  function stopMenuMusic() { if (sound.isPlaying) sound.stop(); }
+  function playMenuMusic() { if (!sound.isPlaying && sound.buffer) sound.play(); }
 
   function playCinematicPhase(phase, onComplete) {
     const audios = [intro1, intro2, intro3, intro4];
     const target = audios[phase - 1];
 
     if (target && target.buffer) {
-      target.setVolume(1.0);
       target.play();
-      
       setTimeout(() => {
         if (phase === 2 && ovationPlayer.buffer) {
           ovationPlayer.play();
           setTimeout(() => { if (onComplete) onComplete(); }, ovationPlayer.buffer.duration * 1000);
-        } 
-        else if (phase === 3 && ovationEnemy.buffer) {
+        } else if (phase === 3 && ovationEnemy.buffer) {
           ovationEnemy.play();
           setTimeout(() => { if (onComplete) onComplete(); }, ovationEnemy.buffer.duration * 1000);
-        } 
-        else {
+        } else {
           if (onComplete) onComplete();
         }
       }, target.buffer.duration * 1000);
-      
     } else {
       setTimeout(() => { if (onComplete) onComplete(); }, 3000);
     }
   }
 
-  // --- LÓGICA DE AMBIENTE CON EMPALME PARA EVITAR SILENCIOS ---
   function startCrowd() {
     if (crowdStart.buffer && !crowdStart.isPlaying) {
       crowdStart.play(); 
-      
-      // Restamos 300ms para que el loop arranque un instante antes de que acabe el grito
       const overlapTime = Math.max(0, (crowdStart.buffer.duration * 1000) - 300);
-      
       setTimeout(() => {
         const menu = document.getElementById("menuOverlay");
         if (menu && menu.style.display === "none") {
-          if (crowdLoop.buffer && !crowdLoop.isPlaying) {
-            crowdLoop.play();
-          }
+          if (crowdLoop.buffer && !crowdLoop.isPlaying) crowdLoop.play();
         }
       }, overlapTime);
-      
     } else {
-      if (crowdLoop.buffer && !crowdLoop.isPlaying) {
-        crowdLoop.play();
-      }
+      if (crowdLoop.buffer && !crowdLoop.isPlaying) crowdLoop.play();
     }
   }
 
-  // --- FUNCIÓN PARA REPETIR EL GRITO DE INICIO ---
   function playCrowdCheer() {
     if (crowdStart.buffer) {
       if (crowdStart.isPlaying) crowdStart.stop();
@@ -164,12 +168,47 @@ export function setupAudio(camera, manager) {
     if (crowdLoop.isPlaying) crowdLoop.stop();
   }
 
-  function playWinner() {
-    if (winnerSound.buffer && !winnerSound.isPlaying) winnerSound.play();
+  function startFinalCrowd() {
+    if (finalCrowdLoop.buffer && !finalCrowdLoop.isPlaying) {
+      finalCrowdLoop.play();
+    }
+  }
+
+  function stopFinalCrowd() {
+    if (finalCrowdLoop.isPlaying) finalCrowdLoop.stop();
+  }
+
+  function playFinalBell() {
+    if (finalBell.buffer && !finalBell.isPlaying) {
+      finalBell.play();
+    }
+  }
+
+  function stopFinalBell() {
+    if (finalBell.isPlaying) {
+      finalBell.stop();
+    }
+  }
+
+  function playVictoryPhase(phase, isPlayerWinner, onComplete) {
+    const arr = isPlayerWinner ? grAudios : gaAudios;
+    const target = arr[phase - 1]; 
+
+    if (target && target.buffer) {
+      target.play();
+      setTimeout(() => {
+        if (onComplete) onComplete();
+      }, target.buffer.duration * 1000);
+    } else {
+      setTimeout(() => { if (onComplete) onComplete(); }, 3000);
+    }
   }
 
   function playBell() {
-    if (bellSound.buffer && !bellSound.isPlaying) bellSound.play();
+    if (bellSound && bellSound.buffer) {
+      if (bellSound.isPlaying) bellSound.stop();
+      bellSound.play();
+    }
   }
 
   function playPunch() {
@@ -179,14 +218,12 @@ export function setupAudio(camera, manager) {
     }
   }
 
-  function playFightMusic() {
-    // Vacío intencionalmente
-  }
+  function playFightMusic() {}
 
   return {
     listener, audioLoader, sound, bellSound, punchSound,
-    playBell, playPunch, playFightMusic,
-    playCinematicPhase, stopMenuMusic, playMenuMusic,
-    startCrowd, stopCrowd, playWinner, playCrowdCheer // <-- Exportamos la nueva función
+    playBell, playPunch, playFightMusic, playMenuMusic, stopMenuMusic,
+    playCinematicPhase, startCrowd, stopCrowd, playCrowdCheer,
+    startFinalCrowd, stopFinalCrowd, playFinalBell, stopFinalBell, playVictoryPhase,
   };
 }

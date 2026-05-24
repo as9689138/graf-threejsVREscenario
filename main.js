@@ -58,7 +58,8 @@ import {
 
 import { updateCamera, 
   handleCameraZoom, 
-  updateCinematicCamera 
+  updateCinematicCamera,
+  updateVictoryCamera 
 } from "./src/camera/CameraController.js";
 
 import {
@@ -94,12 +95,13 @@ let audioManager;
 let hudController; // NUEVO
 
 // --- SISTEMA DE ROUNDS Y ESTADOS ---
-let gameState = "MENU"; // MENU, ANNOUNCING, FIGHTING, KO
+let gameState = "MENU"; // MENU, ANNOUNCING, FIGHTING, KO, CINEMATIC, VICTORY_CINEMATIC
 let currentRound = 1;
 let roundTimer = 60; // 1 minuto (60 segundos)
 let lastTime = 0;
 
 let cinematicState = { phase: 0, time: 0 };
+let victoryState = { phase: 0, time: 0, winner: null, loser: null, isPlayerWinner: false }; // <-- AÑADIDO
 
 let playerIndex = 0;
 let enemyIndex = 0;
@@ -254,6 +256,8 @@ renderer.xr.addEventListener("sessionend", () => {
   gameStarted = false;
 
   audioManager.stopCrowd(); // Silenciar al público al forzar la salida
+  audioManager.stopFinalCrowd(); // Parar público final si te quitas el visor
+  document.getElementById("announcer").style.display = "none"; // Forzar apagado de texto
 
   // 4. Volvemos a mostrar el menú al salir de VR
   if (menuController && menuController.overlay) {
@@ -452,7 +456,9 @@ function animate() {
     onKnockout: handleKnockout,
 
     updateCinematicCamera, 
-    cinematicState
+    cinematicState,
+    updateVictoryCamera, 
+    victoryState 
   });
 }
 
@@ -477,8 +483,8 @@ function resetPositions() {
   player.isKnockedOut = false; enemy.isKnockedOut = false;
   player.isCelebrating = false; enemy.isCelebrating = false;
 
-  // Solo los ponemos en "Guardia" si NO están en medio de la entrada épica
-  if (gameState !== "CINEMATIC") {
+  // Solo los ponemos en "Guardia" si NO están en medio de la entrada épica ni victoria
+  if (gameState !== "CINEMATIC" && gameState !== "VICTORY_CINEMATIC") {
     playFightIdle(player);
     playFightIdle(enemy);
   }
@@ -493,6 +499,7 @@ function startNewMatch() {
 
   audioManager.stopMenuMusic(); // Cortamos la música del menú
   audioManager.stopCrowd();     // Por si quedó reproduciendo de la partida anterior
+  audioManager.stopFinalCrowd(); // Paramos sonido de victoria anterior
   startCinematicSequence();     // ¡Inicia el show!
 }
 
@@ -563,7 +570,7 @@ async function finishCinematic() {
   await hudController.showAnnouncer(`ROUND 1`, 2000);
   
   audioManager.playBell();
-  audioManager.playCrowdCheer(); // <-- VUELVE A SONAR EL GRITO AL EMPEZAR LA PELEA
+  audioManager.playCrowdCheer(); // VUELVE A SONAR EL GRITO AL EMPEZAR LA PELEA
   
   roundTimer = 60;
   lastTime = performance.now();
@@ -580,7 +587,7 @@ async function startRoundSequence() {
   await hudController.showAnnouncer(`ROUND ${currentRound}`, 2000);
   
   audioManager.playBell();
-  audioManager.playCrowdCheer(); // <-- VUELVE A SONAR EL GRITO AL EMPEZAR NUEVO ROUND
+  audioManager.playCrowdCheer(); // VUELVE A SONAR EL GRITO AL EMPEZAR NUEVO ROUND
 
   roundTimer = 60;
   lastTime = performance.now();
@@ -605,6 +612,13 @@ async function handleRoundEnd() {
 function updateHUD(forcedState = gameState) {
   if (!hudController || forcedState === "MENU") return;
 
+  // 🛡️ CORRECCIÓN PROTECCIÓN DE TEXTO VR: Mantenemos el estado en "KO" si estamos en la 
+  // cinemática final, evitando que el bucle continuo oculte la malla 3D de los mensajes.
+  let visualState = forcedState;
+  if (visualState === "VICTORY_CINEMATIC") {
+    visualState = "KO";
+  }
+
   const min = Math.floor(roundTimer / 60);
   const sec = roundTimer % 60;
   const timeStr = `${min}:${sec < 10 ? "0" : ""}${sec}`;
@@ -617,10 +631,13 @@ function updateHUD(forcedState = gameState) {
     timeStr,
     currentRound,
     renderer.xr.isPresenting,
-    forcedState
+    visualState
   );
 }
 
+// ==========================================
+// CINEMÁTICA DE VICTORIA EN 5 FASES
+// ==========================================
 async function handleKnockout({ winner, loser }) {
   if (knockoutHandled) return;
   knockoutHandled = true;
@@ -635,44 +652,92 @@ async function handleKnockout({ winner, loser }) {
   // Damos tiempo a que el navegador pinte la barra en 0
   await wait(400);
 
-  // Ahora sí congelamos la pelea
-  gameState = "KO";
+  // Ahora sí congelamos la pelea y pasamos al nuevo estado de victoria
+  gameState = "VICTORY_CINEMATIC";
   gameStarted = false;
 
   playKnockoutAnimation(loser);
   playVictoryAnimation(winner);
-
-  // Pausa para que se vea la caída antes del texto
-  await wait(500);
-
-  audioManager.stopCrowd();   // Silenciamos el loop normal del público
-  audioManager.playWinner();  // Disparamos la ovación del Ganador
   audioManager.playBell();
 
   updateHUD("KO");
 
-  await hudController.showAnnouncer("K.O.", 2000);
-
-  const winnerText =
-    winner === player
-      ? "¡JUGADOR GANA!"
-      : "¡IA OPONENTE GANA!";
-
-  await hudController.showAnnouncer(winnerText, 3000);
-
-  await hudController.showAnnouncer("JUEGO FINALIZADO", 2500);
-
-  hudController.setVisible(false, renderer.xr.isPresenting);
-
-  if (renderer.xr.isPresenting) {
-    renderer.xr.getSession().end();
+  audioManager.playFinalBell();
+  
+  // Dejamos el HUD visible para mantener vivo el texto en VR
+  if (!renderer.xr.isPresenting) {
+    hudController.setVisible(false, false);
+  } else {
+    hudController.setVisible(true, true);
   }
+  
+  document.getElementById("announcer").style.display = "none"; // Limpiar textos viejos 2D
+
+  // Iniciar la locura del público final
+  audioManager.startFinalCrowd();
+
+  // Guardamos quién ganó para la cinemática
+  victoryState.winner = winner;
+  victoryState.loser = loser;
+  victoryState.isPlayerWinner = (winner === player);
+  
+  // AÑADIDO: totalTime para independizar PC de VR
+  victoryState.totalTime = 0;
+
+  runVictoryPhase(1);
+}
+
+function runVictoryPhase(phase) {
+  victoryState.phase = phase;
+  
+  // CLAVE VR: Reiniciar el tiempo local de cada fase para que los cálculos 
+  // del recorrido empiecen de cero y no haya saltos bruscos.
+  victoryState.time = 0;
+
+  if (phase > 5) {
+    exitToMenu();
+    return;
+  }
+
+  // Lógica de textos según fase
+  let text = "";
+  if (phase === 2) text = "K.O.";
+  if (phase === 3) text = victoryState.isPlayerWinner ? "¡JUGADOR GANA!" : "¡IA OPONENTE GANA!";
+  if (phase === 4) text = ""; // Limpiamos pantalla
+  if (phase === 5) text = "JUEGO FINALIZADO";
+
+  if (text !== "") {
+    if (renderer.xr.isPresenting) hudController.setVisible(true, true);
+    hudController.showAnnouncer(text, 20000);
+  } else if (phase === 4) {
+    document.getElementById("announcer").style.display = "none";
+    if (renderer.xr.isPresenting) hudController.showAnnouncer("", 10);
+  }
+
+  // Reproducir el audio de la fase correspondiente (GR_1... o GA_1...)
+  audioManager.playVictoryPhase(phase, victoryState.isPlayerWinner, () => {
+    if (gameState === "VICTORY_CINEMATIC") runVictoryPhase(phase + 1);
+  });
+}
+
+function setupVRVictoryPose(phase) {
+  // Esta función queda en desuso ya que la animación por frames se realiza dinámicamente 
+  // dentro del GameLoop, pero se conserva vacía para mantener intactas todas las llamadas.
+}
+
+function exitToMenu() {
+  document.getElementById("announcer").style.display = "none";
+  hudController.setVisible(false, false);
+
+  if (renderer.xr.isPresenting) renderer.xr.getSession().end();
 
   if (menuController && menuController.overlay) {
     menuController.overlay.style.display = "flex";
+    audioManager.stopFinalCrowd();
+    audioManager.stopCrowd(); 
     audioManager.playMenuMusic();
+    audioManager.stopFinalBell();
   }
-
   gameState = "MENU";
 }
 
