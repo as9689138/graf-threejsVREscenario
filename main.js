@@ -124,8 +124,11 @@ const currentLookAt = new THREE.Vector3(0, 90, 0);
 
 const clock = new THREE.Clock();
 
-const params = { asset: "mixamo" };
-const assets = ["mixamo"];
+const params = { asset: "messi" };
+const assets = [
+  "messi",
+  "cristiano"
+];
 
 init();
 

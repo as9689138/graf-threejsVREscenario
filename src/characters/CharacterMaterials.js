@@ -1,21 +1,18 @@
 import * as THREE from 'three';
 
-export function setupModelMaterials(model, manager, makeBlue = false) {
+export function setupModelMaterials(model, manager, textureName) {
 
     const skinLoader = new THREE.TextureLoader(manager);
 
-    const texturePath = makeBlue
-        ? 'assets/textures/rockyy3121i21.png'
-        : 'assets/textures/rockyy3121bal.png';
+    const texturePath = `assets/textures/${textureName}.png`;
 
-    console.log('[TEXTURE] Intentando cargar:', texturePath);
+    console.log('[TEXTURE] Cargando:', texturePath);
 
     skinLoader.load(
+
         texturePath,
 
         function (texture) {
-            console.log('[TEXTURE] Cargada correctamente:', texturePath);
-            console.log('[TEXTURE] Dimensiones:', texture.image.width, texture.image.height);
 
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.flipY = true;
@@ -30,15 +27,15 @@ export function setupModelMaterials(model, manager, makeBlue = false) {
 
                     if (child.material) {
 
-                        const configureMaterial = (m) => {
-                            const newMat = m.clone();
+                        const applyMaterial = (mat) => {
+
+                            const newMat = mat.clone();
 
                             newMat.map = texture;
                             newMat.color.setHex(0xffffff);
 
-                            // Valores originales
-                            newMat.roughness = 0.3;
-                            newMat.metalness = 0.1;
+                            newMat.roughness = 0.4;
+                            newMat.metalness = 0.05;
 
                             newMat.needsUpdate = true;
 
@@ -46,9 +43,11 @@ export function setupModelMaterials(model, manager, makeBlue = false) {
                         };
 
                         if (Array.isArray(child.material)) {
-                            child.material = child.material.map(m => configureMaterial(m));
+                            child.material =
+                                child.material.map(applyMaterial);
                         } else {
-                            child.material = configureMaterial(child.material);
+                            child.material =
+                                applyMaterial(child.material);
                         }
                     }
                 }
@@ -58,7 +57,10 @@ export function setupModelMaterials(model, manager, makeBlue = false) {
         undefined,
 
         function (error) {
-            console.error('[TEXTURE] Error al cargar:', texturePath, error);
+            console.error(
+                '[TEXTURE] Error cargando textura:',
+                error
+            );
         }
     );
 }

@@ -28,7 +28,7 @@ export function loadCharacters({
   loader.load(
     "assets/models/fbx/character/" + asset + ".fbx",
     function (groupPlayer) {
-      setupModelMaterials(groupPlayer, manager, false);
+      setupModelMaterials(groupPlayer, manager, "cr7");
 
       newPlayer.model = groupPlayer;
       newPlayer.model.position.set(0, 40, 120);
@@ -39,7 +39,7 @@ export function loadCharacters({
       loader.load(
         "assets/models/fbx/character/" + asset + ".fbx",
         function (groupEnemy) {
-          setupModelMaterials(groupEnemy, manager, true);
+          setupModelMaterials(groupEnemy, manager, "messi");
 
           newEnemy.model = groupEnemy;
           newEnemy.model.position.set(0, 40, -120);
