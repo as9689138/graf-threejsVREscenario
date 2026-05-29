@@ -11,8 +11,8 @@ export function updateVRLocomotion({
   ringConfig,
   playVRMovementAnimation,
   playFightIdle,
-  moveSpeed = 65,
-  turnSpeed = 2.4,
+  moveSpeed = 80,       // 65 → 80: movimiento más dinámico
+  turnSpeed = 2.8,      // 2.4 → 2.8: rotación más precisa
 }) {
   if (!renderer.xr.isPresenting) return;
   if (!player || !player.model) return;
@@ -28,7 +28,7 @@ export function updateVRLocomotion({
     const x = gamepad.axes[2] ?? gamepad.axes[0] ?? 0;
     const y = gamepad.axes[3] ?? gamepad.axes[1] ?? 0;
 
-    const deadZone = 0.15;
+    const deadZone = 0.10;    // 0.15 → 0.10: responde antes al stick
 
     const stickX = Math.abs(x) > deadZone ? x : 0;
     const stickY = Math.abs(y) > deadZone ? y : 0;
@@ -39,7 +39,7 @@ export function updateVRLocomotion({
       //=================================================
 
       const triggerPressed = isPressed(gamepad.buttons[0]);
-      const currentMoveSpeed = triggerPressed ? 320 : moveSpeed;
+      const currentMoveSpeed = triggerPressed ? 380 : moveSpeed;   // sprint más rápido
 
       if (stickX !== 0 || stickY !== 0) {
         forward.set(0, 0, 1).applyQuaternion(player.model.quaternion);

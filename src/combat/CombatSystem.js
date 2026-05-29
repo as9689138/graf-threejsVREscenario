@@ -1,25 +1,62 @@
 import * as THREE from "three";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTES DE COLISIÓN
+// ─────────────────────────────────────────────────────────────────────────────
+const BODY_MIN_DIST   = 90;    // distancia mínima entre modelos
+const BOUNCE_DAMPING  = 0.68;  // cuánto se amortiza el rebote por frame
+const BOUNCE_IMPULSE  = 0.40;  // fuerza del impulso al colisionar
+const BOUNCE_CUTOFF   = 0.08;  // velocidad mínima para seguir aplicando bounce
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COLISIONES CORPORALES CON REBOTE
+// ─────────────────────────────────────────────────────────────────────────────
 export function resolveBodyCollisions(player, enemy) {
   if (!player.model || !enemy.model) return;
 
   const dist = player.model.position.distanceTo(enemy.model.position);
-  // AUMENTAMOS la distancia mínima de 65 a 85 para que los brazos/pechos no se traspasen
-  const minDist = 85; 
 
-  if (dist < minDist) {
-    const overlap = minDist - dist;
+  if (dist < BODY_MIN_DIST && dist > 0) {
+    const overlap = BODY_MIN_DIST - dist;
 
     const dir = new THREE.Vector3()
       .subVectors(player.model.position, enemy.model.position)
       .normalize();
 
-    // Efecto repulsión natural, los mantiene separados físicamente
-    player.model.position.addScaledVector(dir, overlap * 0.5);
-    enemy.model.position.addScaledVector(dir, -overlap * 0.5);
+    // Separación completa en un solo frame (evita penetración acumulada)
+    player.model.position.addScaledVector(dir,  overlap * 0.55);
+    enemy.model.position.addScaledVector(dir,  -overlap * 0.55);
+
+    // Añadir impulso de rebote a la velocidad de cada personaje
+    _addBounceVelocity(player, dir,  overlap * BOUNCE_IMPULSE);
+    _addBounceVelocity(enemy,  dir, -overlap * BOUNCE_IMPULSE);
   }
+
+  // Aplicar y amortiguar velocidades de rebote
+  _applyVelocity(player);
+  _applyVelocity(enemy);
 }
 
+function _addBounceVelocity(character, dir, strength) {
+  if (!character.bounceVel) character.bounceVel = new THREE.Vector3();
+  character.bounceVel.addScaledVector(dir, strength);
+}
+
+function _applyVelocity(character) {
+  if (!character.bounceVel) return;
+  if (character.bounceVel.lengthSq() < BOUNCE_CUTOFF * BOUNCE_CUTOFF) {
+    character.bounceVel.set(0, 0, 0);
+    return;
+  }
+  // Solo X/Z, nunca empuja hacia arriba
+  character.bounceVel.y = 0;
+  character.model.position.add(character.bounceVel);
+  character.bounceVel.multiplyScalar(BOUNCE_DAMPING);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DETECCIÓN DE GOLPES
+// ─────────────────────────────────────────────────────────────────────────────
 export function checkHits({
   gameStarted,
   player,
@@ -32,25 +69,8 @@ export function checkHits({
 }) {
   if (!gameStarted || !player.model || !enemy.model) return;
 
-  evaluateHit({
-    attacker: player,
-    defender: enemy,
-    punchTypes,
-    audioManager,
-    triggerHitReaction,
-    isVR,
-    onKnockout
-  });
-
-  evaluateHit({
-    attacker: enemy,
-    defender: player,
-    punchTypes,
-    audioManager,
-    triggerHitReaction,
-    isVR,
-    onKnockout
-  });
+  evaluateHit({ attacker: player, defender: enemy, punchTypes, audioManager, triggerHitReaction, isVR, onKnockout });
+  evaluateHit({ attacker: enemy, defender: player, punchTypes, audioManager, triggerHitReaction, isVR, onKnockout });
 }
 
 export function evaluateHit({
@@ -62,91 +82,87 @@ export function evaluateHit({
   isVR,
   onKnockout
 }) {
-  // 1. Verificamos que el atacante esté golpeando y que el defensor no esté evadiendo (I-Frames)
-  if (!attacker.currentPunch || attacker.hasHit || attacker.isHit || defender.isHit || defender.isEvading) {
-    return;
-  }
+  if (!attacker.currentPunch || attacker.hasHit || attacker.isHit || defender.isHit || defender.isEvading) return;
 
   const action = attacker.actions[attacker.currentPunch];
   if (!action) return;
 
-  const progress = action.time / action.getClip().duration;
-  
-  // Rango de tiempo de la animación donde el golpe es válido (en VR damos un poquito más de margen)
-  const maxProgress = isVR ? 0.6 : 0.5; 
+  const clipDur = action.getClip().duration;
+  const progress = action.time / clipDur;
 
-  if (progress > 0.3 && progress < maxProgress) {
-    const dist = attacker.model.position.distanceTo(defender.model.position);
-    
-    // Distancia física a la que el golpe conecta
-    const hitRange = isVR ? 125 : 140; 
+  // Ventana de impacto: 25%–55% de la animación
+  // En VR ampliamos un poco para compensar el lag del tracking
+  const hitStart = 0.22;
+  const hitEnd   = isVR ? 0.62 : 0.52;
 
-    if (dist < hitRange) {
-      // ¡EL GOLPE CONECTÓ!
-      attacker.hasHit = true;
-      audioManager.playPunch();
+  if (progress < hitStart || progress > hitEnd) return;
 
-      // === A. PUSHBACK (Empujar al rival hacia atrás) ===
-      const pushDirection = new THREE.Vector3()
-        .subVectors(defender.model.position, attacker.model.position)
-        .normalize();
-      pushDirection.y = 0; // Evitamos que salga volando hacia arriba
-      defender.model.position.addScaledVector(pushDirection, 22);
+  const dist     = attacker.model.position.distanceTo(defender.model.position);
+  const hitRange = isVR ? 128 : 145;
 
-      // === B. RECIBIR DAÑO (Sistema de Vida) ===
-      // Restamos 10 puntos de vida al que recibió el golpe
-      defender.health -= 10;
+  if (dist >= hitRange) return;
 
-      // Verificamos si la vida llegó a cero (K.O.)
-      if (defender.health <= 0) {
-        defender.health = 0;
-        defender.isDead = true;
-        attacker.isWinner = true;
+  // ── ¡GOLPE CONECTADO! ─────────────────────────────────────────────────────
+  attacker.hasHit = true;
+  audioManager.playPunch();
 
-        if (onKnockout) {
-          onKnockout({
-            winner: attacker,
-            loser: defender
-          });
-        }
+  // Dirección del empujón (plano XZ únicamente)
+  const pushDir = new THREE.Vector3()
+    .subVectors(defender.model.position, attacker.model.position)
+    .setY(0)
+    .normalize();
 
-        return;
-      }
+  // Empujón inmediato
+  defender.model.position.addScaledVector(pushDir, 18);
 
-      // === C. REACCIÓN DE DOLOR (Animación) ===
-      // Solo si sigue vivo
-      triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
-    }
+  // Impulso de rebote con velocidad acumulada
+  _addBounceVelocity(defender, pushDir, 14);
+
+  // ── Daño ──────────────────────────────────────────────────────────────────
+  defender.health -= 10;
+
+  if (defender.health <= 0) {
+    defender.health   = 0;
+    defender.isDead   = true;
+    attacker.isWinner = true;
+    if (onKnockout) onKnockout({ winner: attacker, loser: defender });
+    return;
   }
+
+  // ── Reacción de dolor ─────────────────────────────────────────────────────
+  triggerHitReaction(defender, punchTypes[attacker.currentPunch] || "head");
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REACCIÓN DE IMPACTO
+// ─────────────────────────────────────────────────────────────────────────────
 export function triggerHitReaction(character, type, switchAction) {
-  character.isHit = true;
-  character.isMoving = false;
-  character.isComboing = false;
-  character.comboQueue = [];
+  character.isHit       = true;
+  character.isMoving    = false;
+  character.isComboing  = false;
+  character.comboQueue  = [];
   character.currentPunch = null;
-  character.moveData = null;
+  character.moveData    = null;
+
+  // Cancelar también la velocidad de rebote actual para que no interfiera
+  if (character.bounceVel) character.bounceVel.set(0, 0, 0);
 
   const now = performance.now();
-  // Aumentamos el margen a 3000ms para asegurar que cuente los combos rápidos
-  if (now - (character.lastHitTime || 0) > 3000) {
+  const timeSinceLast = now - (character.lastHitTime || 0);
+
+  if (timeSinceLast > 2800) {
     character.consecutiveHitsReceived = 1;
   } else {
     character.consecutiveHitsReceived = (character.consecutiveHitsReceived || 0) + 1;
   }
   character.lastHitTime = now;
 
-  // Si recibe 2 golpes, guardamos la orden directa de huir
   if (character.consecutiveHitsReceived >= 2) {
-    character.needsToEvade = true; // ¡LA CLAVE ESTÁ AQUÍ!
-    character.consecutiveHitsReceived = 0; 
+    character.needsToEvade = true;
+    character.consecutiveHitsReceived = 0;
   }
 
   const animName = type === "body" ? "hitBody" : "hitHead";
-  const action = character.actions[animName];
-
-  if (action) {
-    switchAction(character, action, 0.1);
-  }
+  const action   = character.actions[animName];
+  if (action) switchAction(character, action, 0.08);
 }

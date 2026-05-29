@@ -206,59 +206,208 @@ button:hover {
 }
 
 /* =================================================
-   SISTEMA DE VIDA Y ROUNDS (HUD)
+   HUD DE COMBATE
 ================================================= */
 #gameHUD {
-    position: absolute;
-    top: 0; left: 0; width: 100%;
-    display: flex; justify-content: space-between;
-    padding: 20px 40px; box-sizing: border-box;
-    z-index: 50; pointer-events: none;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+  position: absolute;
+  top: 0; left: 0; width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 28px 0;
+  box-sizing: border-box;
+  z-index: 50;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.82) 0%,
+    rgba(0,0,0,0.30) 55%,
+    transparent 100%
+  );
 }
 
-.hud-player, .hud-enemy { width: 35%; }
-.hud-enemy { text-align: right; }
+/* ── Paneles laterales ── */
+.hud-player,
+.hud-enemy {
+  width: 38%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.hud-enemy { align-items: flex-end; }
 
-.hud-name { font-weight: bold; font-size: 20px; text-shadow: 2px 2px 2px #000; margin-bottom: 5px; }
+/* ── Nombre del luchador ── */
+.hud-name {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 3.5px;
+  color: rgba(255,255,255,0.50);
+  text-transform: uppercase;
+  text-shadow: 0 1px 6px rgba(0,0,0,1);
+}
 
+/* ── Barra de vida — fondo ── */
 .health-bar-bg {
-    width: 100%; height: 25px;
-    background: #333; border: 2px solid #fff; border-radius: 4px;
-    overflow: hidden;
+  width: 100%;
+  height: 20px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 3px;
+  overflow: visible;
+  position: relative;
+  box-shadow:
+    inset 0 2px 5px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(0,0,0,0.4);
 }
 
+/* ── Barra de vida — relleno ── */
 .health-bar-fill {
-    height: 100%; width: 100%;
-    background: #00ff00; /* Verde inicial */
-    transition: width 0.3s ease, background-color 0.3s ease;
+  height: 100%;
+  width: 100%;
+  border-radius: 2px;
+  background-color: #00cc55;            /* sobreescrito por JS */
+  position: relative;
+  transition:
+    width      0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.4s ease,
+    box-shadow 0.4s ease;
 }
 
-/* El jugador es azul, el enemigo es rojo (opcional, pero ayuda) */
-#hp-player { transform-origin: left; }
-#hp-enemy { float: right; }
+/* Shine superior de la barra */
+.health-bar-fill::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.22), transparent);
+  border-radius: 2px 2px 0 0;
+  pointer-events: none;
+}
 
-.hud-center { text-align: center; width: 20%; }
-#hud-round { font-size: 22px; font-weight: bold; color: #ffd700; text-shadow: 2px 2px 4px #000; }
-#hud-timer { font-size: 32px; font-weight: bold; text-shadow: 2px 2px 4px #000; font-family: monospace; }
+#hp-player { transform-origin: left; }
+#hp-enemy  { transform-origin: right; float: right; }
+
+/* Pulso de vida baja */
+@keyframes healthPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.health-bar-fill.low-health      { animation: healthPulse 1.1s ease-in-out infinite; }
+.health-bar-fill.critical-health { animation: healthPulse 0.42s ease-in-out infinite; }
+
+/* ── Centro del HUD ── */
+.hud-center {
+  text-align: center;
+  width: 22%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding-top: 2px;
+}
+
+/* ── Etiqueta de round ── */
+#hud-round {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #ffd700;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 14px rgba(255,215,0,0.55),
+    0 1px 4px rgba(0,0,0,0.9);
+}
+
+/* ── Cronómetro ── */
+#hud-timer {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow:
+    0 0 22px rgba(255,255,255,0.28),
+    0 2px 8px rgba(0,0,0,0.95);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+/* Advertencia de tiempo bajo */
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+
+#hud-timer.warning {
+  color: #ffc400;
+  text-shadow:
+    0 0 20px rgba(255,196,0,0.65),
+    0 2px 8px rgba(0,0,0,0.95);
+  animation: timerPulse 1s ease-in-out infinite;
+}
+#hud-timer.critical {
+  color: #ff3c3c;
+  text-shadow:
+    0 0 22px rgba(255,60,60,0.75),
+    0 2px 8px rgba(0,0,0,0.95);
+  animation: timerPulse 0.38s ease-in-out infinite;
+}
 
 /* =================================================
-   ANUNCIADOR CENTRAL (K.O, ROUNDS)
+   ANUNCIADOR CENTRAL
 ================================================= */
 #announcer {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 80px; font-weight: bold;
-    color: #fff; text-shadow: 0px 0px 20px #ff0000, 4px 4px 0px #000;
-    z-index: 60; pointer-events: none;
-    text-align: center;
-    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+
+  font-size: 100px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+  color: #fff;
+
+  text-shadow:
+    0 0  30px rgba(255,215,0,0.95),
+    0 0  70px rgba(255,140,0,0.55),
+    0 0 120px rgba(255,60,0,0.25),
+    4px 4px 0 rgba(0,0,0,0.55);
+
+  animation: announcerIn 0.42s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
 }
 
-@keyframes popIn {
-    0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
-    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+/* Capa de resplandor duplicado detrás del texto */
+#announcer::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  -webkit-text-stroke: 14px rgba(255,215,0,0.12);
+  filter: blur(10px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes announcerIn {
+  0% {
+    transform: translate(-50%, -50%) scale(0.35) skewX(-8deg);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  65% {
+    transform: translate(-50%, -50%) scale(1.07) skewX(1.5deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) skewX(0deg);
+    opacity: 1;
+    filter: blur(0);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════

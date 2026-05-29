@@ -31,15 +31,22 @@ export function bindAnimations({
   character.mixer.addEventListener("finished", function (event) {
     if (event.action === character.actions.readyIdle) return;
     if (event.action === character.actions.fightIdle) return;
-    if (event.action === character.actions.victory) return;
+    if (event.action === character.actions.victory)   return;
 
     // Estado final: no regresar a idle
-    if (character.isKnockedOut) return;
+    if (character.isKnockedOut)  return;
     if (character.isCelebrating) return;
 
+    // Si el golpe ya conectó y la animación acaba de terminar,
+    // resetear inmediatamente para minimizar el lockout del jugador
+    if (character.hasHit && isPlayer) {
+      character.currentPunch = null;
+      character.hasHit       = false;
+    }
+
     character.currentPunch = null;
-    character.hasHit = false;
-    character.moveData = null;
+    character.hasHit       = false;
+    character.moveData     = null;
 
     if (character.isHit) {
       character.isHit = false;
