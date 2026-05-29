@@ -260,3 +260,234 @@ button:hover {
     0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0; }
     100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SISTEMA DE PAUSA
+═══════════════════════════════════════════════════════════════════ */
+
+#pauseOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.70);
+  backdrop-filter: blur(8px) brightness(0.55);
+  -webkit-backdrop-filter: blur(8px) brightness(0.55);
+  z-index: 200;
+}
+
+/* Panel central */
+.pause-panel {
+  position: relative;
+  background: linear-gradient(160deg, #0d0d20 0%, #060612 100%);
+  border: 1.5px solid #ffd700;
+  border-radius: 20px;
+  padding: 44px 56px 36px;
+  min-width: 340px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(255,215,0,0.07),
+    0 0 55px rgba(255,215,0,0.18),
+    0 22px 80px rgba(0,0,0,0.92);
+  animation: pausePanelIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+}
+
+/* Línea dorada superior del panel */
+.pause-panel::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 18%; right: 18%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffd700 45%, #ffd700 55%, transparent);
+  border-radius: 2px;
+}
+
+/* Destello radial interior */
+.pause-panel-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.05) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+@keyframes pausePanelIn {
+  from { transform: scale(0.80) translateY(18px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* Ícono ▮▮ */
+.pause-badge {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 7px;
+  color: rgba(255, 215, 0, 0.45);
+}
+
+/* Título PAUSA */
+.pause-title {
+  margin: 0 0 4px;
+  font-size: 44px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  color: #ffd700;
+  text-shadow: 0 0 38px rgba(255,215,0,0.45), 0 2px 0 rgba(0,0,0,0.55);
+}
+
+/* Subtítulo */
+.pause-subtitle {
+  margin: 0 0 20px;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.28);
+  text-transform: uppercase;
+}
+
+/* Línea separadora */
+.pause-divider {
+  height: 1px;
+  margin: 0 0 22px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.28), transparent);
+}
+
+/* Contenedor de botones */
+.pause-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Botón base */
+.pause-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 22px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Arial', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform     0.13s ease,
+    box-shadow    0.13s ease,
+    background    0.13s ease,
+    border-color  0.13s ease,
+    filter        0.13s ease;
+}
+
+/* Reflejo superior del botón */
+.pause-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.07), transparent 55%);
+  pointer-events: none;
+}
+
+.pause-btn:hover  { transform: translateY(-2px) scale(1.025); }
+.pause-btn:active { transform: scale(0.96); filter: brightness(0.85); }
+
+.pause-btn-icon  { font-size: 15px; opacity: 0.88; min-width: 18px; }
+
+/* Pequeño hint de tecla (sólo Continuar) */
+.pause-btn-hint {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  opacity: 0.4;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: monospace;
+}
+
+/* Badge BETA (botón VR) */
+.pause-btn-badge-vr {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  background: rgba(0,100,255,0.3);
+  border: 1px solid rgba(0,130,255,0.5);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #7ab8ff;
+}
+
+/* ── Continuar (dorado primario) ── */
+.pause-btn--primary {
+  background: linear-gradient(135deg, #dba800, #ffd700 52%, #c09000);
+  color: #000;
+  border-color: rgba(255,215,0,0.35);
+  box-shadow: 0 4px 20px rgba(255,215,0,0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+}
+.pause-btn--primary:hover {
+  box-shadow: 0 8px 30px rgba(255,215,0,0.48), inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* ── Reiniciar (neutro blanco) ── */
+.pause-btn--secondary {
+  background: rgba(255,255,255,0.05);
+  color: #ddd;
+  border-color: rgba(255,255,255,0.13);
+}
+.pause-btn--secondary:hover {
+  background: rgba(255,255,255,0.11);
+  border-color: rgba(255,255,255,0.3);
+  color: #fff;
+}
+
+/* ── Entrar a VR (azul) ── */
+.pause-btn--vr {
+  background: rgba(0, 75, 200, 0.18);
+  color: #7ab8ff;
+  border-color: rgba(0, 100, 220, 0.35);
+}
+.pause-btn--vr:hover {
+  background: rgba(0, 75, 200, 0.32);
+  border-color: #7ab8ff;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(0,100,255,0.22);
+}
+
+/* ── Salir (rojo peligro) ── */
+.pause-btn--danger {
+  background: rgba(173, 2, 2, 0.15);
+  color: #ff7070;
+  border-color: rgba(173, 2, 2, 0.32);
+}
+.pause-btn--danger:hover {
+  background: rgba(173, 2, 2, 0.30);
+  border-color: #ff7070;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(200,0,0,0.2);
+}
+
+/* Hint de tecla al pie del panel */
+.pause-hint {
+  margin: 22px 0 0;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.18);
+}
+.pause-hint kbd {
+  font-family: monospace;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+}

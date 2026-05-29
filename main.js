@@ -20,6 +20,7 @@ import { setupMenu } from "./src/ui/MenuController.js";
 import { createSceneSetup } from "./src/core/SceneSetup.js";
 import { setupGUI } from "./src/ui/GUIController.js";
 import { createHUDController } from "./src/ui/HUDController.js";
+import { createPauseController } from "./src/ui/PauseController.js";
 // VR
 import { setupVR } from "./src/vr/VRManager.js";
 import { createVRPlayerRig } from "./src/vr/VRPlayerRig.js";
@@ -92,7 +93,8 @@ let camDistMode1 = cameraConfig.camDistMode1;
 
 let gameStarted = false;
 let audioManager;
-let hudController; // NUEVO
+let hudController;
+let pauseController;   // ← sistema de pausa
 
 // --- SISTEMA DE ROUNDS Y ESTADOS ---
 let gameState = "MENU"; // MENU, ANNOUNCING, FIGHTING, KO, CINEMATIC, VICTORY_CINEMATIC
@@ -215,6 +217,36 @@ function init() {
   stats.dom.style.display = "none"; // Adiós FPS
   guiController.gui.hide();
   hudController = createHUDController(camera);
+
+  // ─────────────────────────────────────────────────────────
+  // SISTEMA DE PAUSA
+  // ─────────────────────────────────────────────────────────
+  pauseController = createPauseController({
+    // Al continuar: reseteamos lastTime para evitar salto de un segundo
+    onContinue: () => {
+      lastTime = performance.now();
+    },
+
+    // Reiniciar: nueva cinemática + salud/posiciones frescas
+    onRestart: () => {
+      startNewMatch();
+    },
+
+    // Entrar a VR: click programático al botón de Three.js
+    onEnterVR: () => {
+      const vrDomBtn = document.querySelector(".vr-button");
+      if (vrDomBtn) vrDomBtn.click();
+    },
+
+    // Salir al menú principal
+    onExit: () => {
+      exitToMenu();
+    },
+
+    getGameState: () => gameState,
+    getRenderer:  () => renderer,
+    camera
+  });
 }
 
 //=================================================
@@ -238,6 +270,15 @@ renderer.xr.addEventListener("sessionstart", () => {
 
   if (gameState === "MENU") {
     startNewMatch();
+  } else {
+    // Entramos a VR desde mitad de combate (ej: botón "Entrar a VR" del menú pausa).
+    // El HUD seguía en modo HTML → lo cambiamos a panel VR 3D inmediatamente.
+    if (hudController) {
+      const showHUD = (gameState === "FIGHTING" || gameState === "ANNOUNCING");
+      hudController.setVisible(showHUD, true);
+      // Forzamos un dibujado del canvas VR con el estado actual
+      updateHUD();
+    }
   }
 });
 
@@ -278,6 +319,7 @@ vrButtonMapper = createVRButtonMapper({
   getRenderer: () => renderer,
   getPlayer: () => player,
   playPunchAction,
+  getIsPaused: () => pauseController ? pauseController.isPaused() : false,
 });
 
 // =======================================================
@@ -354,6 +396,15 @@ function onMouseWheel(event) {
 }
 
 function onKeyDown(event) {
+  // ── Tecla P → toggle pausa (sólo durante FIGHTING) ──
+  if (event.key === "p" || event.key === "P") {
+    if (pauseController) pauseController.togglePause();
+    return;
+  }
+
+  // Bloquear inputs de juego si estamos pausados
+  if (pauseController && pauseController.isPaused()) return;
+
   handleKeyDown({
     event,
     player,
@@ -383,13 +434,14 @@ function onWindowResize() {
 }
 
 function animate() {
-  // ==============================
-  // ACTUALIZACIÓN DE HUD Y TIEMPO
-  // ==============================
-  if (gameState === "FIGHTING") {
-    const now = performance.now(); // Usamos el tiempo real, sin afectar a Three.js
+  // ══════════════════════════════════════════════════════
+  // TIMER DE ROUNDS — detenido durante pausa
+  // ══════════════════════════════════════════════════════
+  const _paused = pauseController ? pauseController.isPaused() : false;
+
+  if (gameState === "FIGHTING" && !_paused) {
+    const now = performance.now();
     if (now - lastTime >= 1000) {
-      // Si ya pasó 1 segundo (1000 milisegundos)
       lastTime = now;
       roundTimer--;
       if (roundTimer <= 0) handleRoundEnd();
@@ -407,6 +459,10 @@ function animate() {
     scene,
     camera,
     stats,
+
+    // ── Pausa ──
+    isPaused:      _paused,
+    onPauseUpdate: (delta) => { if (pauseController) pauseController.update(delta); },
 
     // Ambiente / postprocesado
     flashParticles,

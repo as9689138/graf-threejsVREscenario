@@ -13,6 +13,11 @@ export function updateGameLoop({
   camera,
   stats,
 
+  // ── Pausa ──────────────────────────────────────────
+  isPaused      = false,   // true → congelar toda la lógica
+  onPauseUpdate = null,    // (delta) => void  — actualizar VRInput de pausa
+  // ───────────────────────────────────────────────────
+
   // Ambiente / postprocesado
   flashParticles,
   composer,
@@ -69,6 +74,18 @@ export function updateGameLoop({
   victoryState
 }) {
   const delta = clock.getDelta();
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAUSA — actualizar siempre el controlador VR (detecta botón de pausa),
+  //         luego congelar toda la lógica del juego y sólo renderizar.
+  // ══════════════════════════════════════════════════════════════════════════
+  if (onPauseUpdate) onPauseUpdate(delta);
+
+  if (isPaused) {
+    renderFrame({ renderer, scene, camera, composer });
+    stats.update();
+    return;
+  }
 
   // ══════════════════════════════════════════════════════════════════════════
   // FLASHES / AMBIENTE

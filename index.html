@@ -22,7 +22,6 @@
 
     <canvas id="scene"></canvas>
 
-    <!-- HUD DE PELEA -->
     <div id="gameHUD" style="display: none;">
         <div class="hud-player">
             <div class="hud-name">JUGADOR</div>
@@ -38,7 +37,6 @@
         </div>
     </div>
 
-    <!-- ANUNCIADOR CINEMÁTICO -->
     <div id="announcer" style="display: none;">ROUND 1</div>
 
     <div id="menuOverlay">
@@ -80,8 +78,13 @@
 
             <section class="instructionsBoard">
                 <h2>CONTROLES DE COMBATE</h2>
+                
+                <div class="tabsContainer">
+                    <button id="btnTab3D" class="tabBtn active">MODO 3D</button>
+                    <button id="btnTabVR" class="tabBtn">MODO VR</button>
+                </div>
 
-                <div class="instructionGrid">
+                <div class="instructionGrid" id="controls3D">
                     <div class="instGroup">
                         <div class="instItem"><img src="assets/textures/controles/flecha_arriba.png"><span>Caminar Adelante</span></div>
                         <div class="instItem"><img src="assets/textures/controles/flecha_abajo.png"><span>Caminar Atrás</span></div>
@@ -134,6 +137,58 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="instructionGrid" id="controlsVR" style="display: none;">
+                    <div class="instGroup">
+                        <div class="instItem"><img src="assets/textures/controles/jl.png"><span>Caminar / Pasos</span></div>
+                        
+                        <div class="instItem">
+                            <div class="comboKeys">
+                                <img src="assets/textures/controles/lt.png"> + <img src="assets/textures/controles/jl.png">
+                            </div>
+                            <span>Pasos Largos</span>
+                        </div>
+
+                        <div class="instItem"><img src="assets/textures/controles/x.png"><span>Hook</span></div>
+                        
+                        <div class="instItem">
+                            <div class="comboKeys">
+                                <img src="assets/textures/controles/lt.png"> + <img src="assets/textures/controles/x.png">
+                            </div>
+                            <span>Hook Shift</span>
+                        </div>
+
+                        <div class="instItem"><img src="assets/textures/controles/y.png"><span>Jab / Cross</span></div>
+                        
+                        <div class="instItem">
+                            <div class="comboKeys">
+                                <img src="assets/textures/controles/lt.png"> + <img src="assets/textures/controles/y.png">
+                            </div>
+                            <span>Uppercut</span>
+                        </div>
+                    </div>
+
+                    <div class="instGroup">
+                        <div class="instItem"><img src="assets/textures/controles/b.png"><span>Lead Jab</span></div>
+                        
+                        <div class="instItem">
+                            <div class="comboKeys">
+                                <img src="assets/textures/controles/rt.png"> + <img src="assets/textures/controles/b.png">
+                            </div>
+                            <span>Lead Jab Shift</span>
+                        </div>
+
+                        <div class="instItem"><img src="assets/textures/controles/va.png"><span>Body Jab</span></div>
+                        
+                        <div class="instItem">
+                            <div class="comboKeys">
+                                <img src="assets/textures/controles/rt.png"> + <img src="assets/textures/controles/va.png">
+                            </div>
+                            <span>Body Jab Shift</span>
+                        </div>
+                    </div>
+                </div>
+
             </section>
         </div>
 
@@ -148,6 +203,23 @@
     </div>
 
     <audio id="ambient" src="assets/audio/forest_night.mp3" preload="auto" loop></audio>
+
+    <script>
+        // Lógica para cambiar de pestañas (Tabs)
+        document.getElementById('btnTab3D').addEventListener('click', function() {
+            document.getElementById('controls3D').style.display = 'grid';
+            document.getElementById('controlsVR').style.display = 'none';
+            this.classList.add('active');
+            document.getElementById('btnTabVR').classList.remove('active');
+        });
+
+        document.getElementById('btnTabVR').addEventListener('click', function() {
+            document.getElementById('controlsVR').style.display = 'grid';
+            document.getElementById('controls3D').style.display = 'none';
+            this.classList.add('active');
+            document.getElementById('btnTab3D').classList.remove('active');
+        });
+    </script>
 
     <script type="module" src="main.js"></script>
 </body>

@@ -1,7 +1,8 @@
 export function createVRButtonMapper({
   getRenderer,
   getPlayer,
-  playPunchAction
+  playPunchAction,
+  getIsPaused = () => false   // ← callback para ignorar inputs durante pausa
 }) {
   const previousButtons = new Map();
 
@@ -60,6 +61,9 @@ export function createVRButtonMapper({
     const player = getPlayer();
 
     if (!renderer || !renderer.xr) return;
+
+    // No procesar golpes durante la pausa
+    if (getIsPaused()) return;
 
     if (
       !player ||
