@@ -93,13 +93,31 @@ button:hover {
     transform: scale(1.05);
 }
 
-#fightBtn {
-    margin-top: 30px;
+/* Contenedor de botones 50/50 */
+.actionButtons {
+    display: flex;
     width: 100%;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+#fightBtn {
+    flex: 1; /* Ocupa el 50% */
     padding: 20px;
     font-size: 20px;
     background: #ad0202; /* Rojo pelea */
     color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+#fightBtn:hover:not(:disabled) {
+    background: #fff;
+    color: #ad0202;
+    transform: scale(1.05);
 }
 
 #fightBtn:disabled {
@@ -210,26 +228,30 @@ button:hover {
 }
 
 /* Botón VR */
-/* Botón VR */
 .vr-button {
-  position: fixed !important;
-
-  left: 50%;
-  bottom: 90px !important;
-
-  transform: translateX(-50%) scale(1);
-
-  z-index: 9999;
-
-  transition:
-    transform 0.2s,
-    background 0.2s,
-    opacity 0.2s;
+    position: relative !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    flex: 1 !important; /* Ocupa el otro 50% */
+    margin: 0 !important;
+    padding: 20px !important;
+    font-size: 20px !important;
+    font-family: 'Arial', sans-serif !important;
+    font-weight: bold !important;
+    background: #004bc8 !important; /* Azul VR */
+    color: white !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    opacity: 1 !important;
+    transition: transform 0.2s, background 0.2s !important;
 }
 
 .vr-button:hover {
-  background: #fff;
-  transform: translateX(-50%) scale(1.05);
+    background: #fff !important;
+    color: #004bc8 !important;
+    transform: scale(1.05) !important;
 }
 
 /* =================================================
@@ -666,4 +688,9 @@ button:hover {
   padding: 1px 6px;
   font-size: 10px;
   color: rgba(255,255,255,0.35);
+}
+
+/* Bloqueo absoluto para que Three.js no muestre el botón antes de tiempo */
+.vr-oculto {
+    display: none !important;
 }

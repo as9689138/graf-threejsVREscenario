@@ -6,9 +6,17 @@ export function setupVR({ renderer, scene }) {
 
   const vrButton = VRButton.createButton(renderer);
   vrButton.classList.add("vr-button");
-  document.body.appendChild(vrButton);
+  
+  // 🛡️ Lo bloqueamos forzosamente desde que nace
+  vrButton.classList.add("vr-oculto"); 
 
-  vrButton.style.display = "none";
+  // Lo inyectamos en el contenedor dividido 50/50
+  const container = document.getElementById("actionButtonsContainer");
+  if (container) {
+      container.appendChild(vrButton);
+  } else {
+      document.body.appendChild(vrButton);
+  }
 
   const controllerLeft = renderer.xr.getController(0);
   const controllerRight = renderer.xr.getController(1);
@@ -27,15 +35,13 @@ export function setupVR({ renderer, scene }) {
   scene.add(gripRight);
 
   function setVRReady() {
-    vrButton.style.display = "block";
-    vrButton.style.pointerEvents = "auto";
-    vrButton.style.opacity = "1";
+    // 🟢 Quita el bloqueo cuando los modelos terminaron de cargar
+    vrButton.classList.remove("vr-oculto"); 
   }
 
   function setVRLoading() {
-    vrButton.style.display = "none";
-    vrButton.style.pointerEvents = "none";
-    vrButton.style.opacity = "0";
+    // 🔴 Activa el bloqueo mientras carga
+    vrButton.classList.add("vr-oculto"); 
   }
 
   return {
