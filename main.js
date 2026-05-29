@@ -134,31 +134,18 @@ const assets = [
 
 init();
 
+let isPlayerCR7 = true;
+
 function init() {
   menuController = setupMenu({
     onFightStart: () => {
-      startNewMatch(); // LLAMADA AL NUEVO SISTEMA
+      startNewMatch(); 
     },
-
-    onPlayerPrev: () => {
-      playerIndex--;
-      console.log("Player index:", playerIndex);
-    },
-
-    onPlayerNext: () => {
-      playerIndex++;
-      console.log("Player index:", playerIndex);
-    },
-
-    onEnemyPrev: () => {
-      enemyIndex--;
-      console.log("Enemy index:", enemyIndex);
-    },
-
-    onEnemyNext: () => {
-      enemyIndex++;
-      console.log("Enemy index:", enemyIndex);
-    },
+    // Recibimos la decisión del menú
+    onCharacterSwap: (isCR7) => {
+      isPlayerCR7 = isCR7; 
+      console.log("¿Jugador es CR7?:", isPlayerCR7);
+    }
   });
 
   menuController.setLoading();
@@ -550,6 +537,39 @@ function resetPositions() {
 }
 
 function startNewMatch() {
+
+  // ─────────────────────────────────────────────────────────
+  // 👕 INYECCIÓN DINÁMICA DE SKINS (SWAP)
+  // ─────────────────────────────────────────────────────────
+  const textureLoader = new THREE.TextureLoader(manager);
+  
+  // Asignamos la textura según la decisión del menú
+  const playerTexName = isPlayerCR7 ? "cr7.png" : "messi.png";
+  const enemyTexName = isPlayerCR7 ? "messi.png" : "cr7.png";
+
+  const texPlayer = textureLoader.load(`assets/textures/${playerTexName}`);
+  const texEnemy = textureLoader.load(`assets/textures/${enemyTexName}`);
+
+  // Configuramos el color correcto y orientación para WebGL
+  texPlayer.colorSpace = THREE.SRGBColorSpace; texPlayer.flipY = true;
+  texEnemy.colorSpace = THREE.SRGBColorSpace; texEnemy.flipY = true;
+
+  // Se lo ponemos al Jugador
+  player.model.traverse((child) => {
+    if (child.isMesh && child.material) {
+      child.material.map = texPlayer;
+      child.material.needsUpdate = true;
+    }
+  });
+
+  // Se lo ponemos al Enemigo (IA)
+  enemy.model.traverse((child) => {
+    if (child.isMesh && child.material) {
+      child.material.map = texEnemy;
+      child.material.needsUpdate = true;
+    }
+  });
+  // ------------------------------------------------------------------------------------
   player.maxHealth = 100; player.health = 100; player.isDead = false;
   enemy.maxHealth = 250; enemy.health = 250; enemy.isDead = false;
   currentRound = 1;
