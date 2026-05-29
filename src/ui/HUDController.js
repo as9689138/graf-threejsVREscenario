@@ -28,7 +28,7 @@ export function createHUDController(camera) {
     
     const vrHUD = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 1.0), vrMaterial);
     
-    vrHUD.position.set(0, 0.4, -2.0);
+    vrHUD.position.set(0, 0.62, -2.6);   // más arriba (0.4→0.62) y más lejos (-2.0→-2.6)
     vrHUD.rotation.set(0, 0, 0); 
     
     vrHUD.renderOrder = 999; 
