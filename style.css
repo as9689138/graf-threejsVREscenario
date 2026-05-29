@@ -123,6 +123,33 @@ button:hover {
     margin-top: 0;
 }
 
+.tabsContainer {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ffd700;
+    padding-bottom: 15px;
+}
+
+.tabBtn {
+    background: #333;
+    color: #aaa;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 6px;
+}
+
+.tabBtn.active {
+    background: #ffd700;
+    color: #000;
+}
+
+.tabBtn:hover:not(.active) {
+    background: #555;
+    color: #fff;
+}
+
 .instructionGrid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Divide el contenedor en dos columnas iguales */
